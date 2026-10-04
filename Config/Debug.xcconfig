@@ -1,0 +1,4 @@
+// Cloud-hosted development endpoint. The deployed Worker is used for development and release builds.
+// The $() construct keeps // from being interpreted as an xcconfig comment.
+API_BASE_URL = https:/$()/incoming2-0-server.incoming-osmcreations.workers.dev
+PUBLIC_BASE_URL = https:/$()/incoming2-0-server.incoming-osmcreations.workers.dev

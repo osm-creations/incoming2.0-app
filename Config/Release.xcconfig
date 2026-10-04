@@ -1,0 +1,4 @@
+// Production Cloudflare Worker used by the API and App Clip.
+// The $() construct keeps // from being interpreted as an xcconfig comment.
+API_BASE_URL = https:/$()/incoming2-0-server.incoming-osmcreations.workers.dev
+PUBLIC_BASE_URL = https:/$()/incoming2-0-server.incoming-osmcreations.workers.dev
