@@ -18,8 +18,6 @@
 		3059680D5D5F046C8D454F37 /* Sources/Shared/Models/APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655560F882BDDBE8C89E4A35 /* Sources/Shared/Models/APIModels.swift */; };
 		327AE16832E17775C55F49A6 /* Sources/Shared/Networking/APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E1DC21E2204DCCB667B6659 /* Sources/Shared/Networking/APIClient.swift */; };
 		38A3E6BB8F30ACF6820318EE /* Sources/Incoming/Features/Performance/InjectInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46873E3757D1E77061747EB /* Sources/Incoming/Features/Performance/InjectInputView.swift */; };
-		39565F4C3073031D0029446C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39565F4B3073031D0029446C /* Assets.xcassets */; };
-		39565F4D3073031D0029446C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39565F4B3073031D0029446C /* Assets.xcassets */; };
 		3C427319EA452EB4B76554A8 /* Sources/Incoming/Features/ClipConfig/ClipConfigViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87F0BB90B2D07B6E36404783 /* Sources/Incoming/Features/ClipConfig/ClipConfigViews.swift */; };
 		4828EBA1F353C812C5054F58 /* Sources/Incoming/Services/NFCWriterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6700FF07865B814A9A4365EF /* Sources/Incoming/Services/NFCWriterService.swift */; };
 		5414D16376B31EE13AF1AD49 /* Sources/IncomingClip/Features/SimulatedCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675DBCDDB6B3ED45D79EF235 /* Sources/IncomingClip/Features/SimulatedCallView.swift */; };
@@ -29,6 +27,8 @@
 		839874776729F5C9F006F706 /* Sources/Incoming/App/AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07421FA72372B0DB1311379A /* Sources/Incoming/App/AppSession.swift */; };
 		859E6BB823772D2BB413B4B5 /* Sources/Incoming/Services/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967ECB1CBC3E1B19EF41D2AA /* Sources/Incoming/Services/KeychainStore.swift */; };
 		8F0E4D93FC59777584718AEE /* Sources/Shared/Design/IncomingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2AC277989EC164695FDAAA7 /* Sources/Shared/Design/IncomingTheme.swift */; };
+		A11C0A11C0A11C0A11C0A111 /* Sources/Incoming/Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C33C0C33C0C33C0C33C0C333 /* Sources/Incoming/Resources/Assets.xcassets */; };
+		B22C0B22C0B22C0B22C0B222 /* Sources/IncomingClip/Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D44C0D44C0D44C0D44C0D444 /* Sources/IncomingClip/Resources/Assets.xcassets */; };
 		B4093C565AF5CAE2F91109D6 /* Sources/Shared/Models/ClipModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53556EC453FBC42217F284BE /* Sources/Shared/Models/ClipModels.swift */; };
 		BD403F1642643DAA8B18D420 /* Sources/Incoming/Features/Dashboard/DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321213D873387A4F9DC29E6 /* Sources/Incoming/Features/Dashboard/DashboardView.swift */; };
 		C3C9A86164C339802A1B8497 /* Sources/Shared/Models/PerformanceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E822E79C18CDA1E9984FAB9E /* Sources/Shared/Models/PerformanceModels.swift */; };
@@ -55,8 +55,8 @@
 		49E1E66282DE8938E6601845 /* Embed App Clips */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/AppClips";
+			dstSubfolderSpec = 16;
 			files = (
 				10DBBCC35DCC2C4FC6EECB86 /* IncomingClip.app in Embed App Clips */,
 			);
@@ -72,7 +72,6 @@
 		2433FF7AE4CA3713415D6A06 /* Sources/IncomingClip/Features/NotesReplicaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Features/NotesReplicaView.swift; sourceTree = "<group>"; };
 		2A2E2A026D3BA27245F41FCA /* Sources/IncomingClip/Features/ClipRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Features/ClipRootView.swift; sourceTree = "<group>"; };
 		2CE2F09A1D4B3C1472427DEE /* Sources/IncomingClip/Services/CallEffectsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Services/CallEffectsController.swift; sourceTree = "<group>"; };
-		39565F4B3073031D0029446C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		53556EC453FBC42217F284BE /* Sources/Shared/Models/ClipModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Shared/Models/ClipModels.swift; sourceTree = "<group>"; };
 		58FBC5745BE6BC8113D2705A /* Sources/IncomingClip/Resources/ringtone.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Sources/IncomingClip/Resources/ringtone.wav; sourceTree = "<group>"; };
 		655560F882BDDBE8C89E4A35 /* Sources/Shared/Models/APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Shared/Models/APIModels.swift; sourceTree = "<group>"; };
@@ -89,9 +88,11 @@
 		B4D5C4CF755002092CD2AC5D /* project.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = project.yml; sourceTree = "<group>"; };
 		B66BCDC810D3FCEA23D284EF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B80D04D542DD80243BB8EF23 /* Config/Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Release.xcconfig; sourceTree = "<group>"; };
+		C33C0C33C0C33C0C33C0C333 /* Sources/Incoming/Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Sources/Incoming/Resources/Assets.xcassets; sourceTree = "<group>"; };
 		C46873E3757D1E77061747EB /* Sources/Incoming/Features/Performance/InjectInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Incoming/Features/Performance/InjectInputView.swift; sourceTree = "<group>"; };
 		C78C5B18D7576691B6C910C2 /* Config/Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Debug.xcconfig; sourceTree = "<group>"; };
 		D321213D873387A4F9DC29E6 /* Sources/Incoming/Features/Dashboard/DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Incoming/Features/Dashboard/DashboardView.swift; sourceTree = "<group>"; };
+		D44C0D44C0D44C0D44C0D444 /* Sources/IncomingClip/Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Sources/IncomingClip/Resources/Assets.xcassets; sourceTree = "<group>"; };
 		D9260C89642F407BAB86DCB8 /* Incoming2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Incoming2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E210DC5986669B3E7608D674 /* Sources/IncomingClip/Features/ClipMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Features/ClipMenuView.swift; sourceTree = "<group>"; };
 		E2AC277989EC164695FDAAA7 /* Sources/Shared/Design/IncomingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Shared/Design/IncomingTheme.swift; sourceTree = "<group>"; };
@@ -173,6 +174,7 @@
 				675DBCDDB6B3ED45D79EF235 /* Sources/IncomingClip/Features/SimulatedCallView.swift */,
 				2CE2F09A1D4B3C1472427DEE /* Sources/IncomingClip/Services/CallEffectsController.swift */,
 				58FBC5745BE6BC8113D2705A /* Sources/IncomingClip/Resources/ringtone.wav */,
+				D44C0D44C0D44C0D44C0D444 /* Sources/IncomingClip/Resources/Assets.xcassets */,
 				E5693F796FBC41F8DDBEC09E /* Sources/IncomingClip/Info.plist */,
 				6F0ECB26A59C20B49E0CE750 /* Sources/IncomingClip/IncomingClip.entitlements */,
 			);
@@ -182,7 +184,6 @@
 		DF891E785808226D241F246E /* Incoming2 */ = {
 			isa = PBXGroup;
 			children = (
-				39565F4B3073031D0029446C /* Assets.xcassets */,
 				44C7E229889FE9D1BB841A79 /* Shared */,
 				F8FDEFCD335E68AB455D4187 /* Incoming */,
 				8E96FF2544D91CCD48129AD7 /* IncomingClip */,
@@ -205,6 +206,7 @@
 				ECE8DA45AE95AC463A167E57 /* Sources/Incoming/Features/Settings/SettingsView.swift */,
 				967ECB1CBC3E1B19EF41D2AA /* Sources/Incoming/Services/KeychainStore.swift */,
 				6700FF07865B814A9A4365EF /* Sources/Incoming/Services/NFCWriterService.swift */,
+				C33C0C33C0C33C0C33C0C333 /* Sources/Incoming/Resources/Assets.xcassets */,
 				AEA3850C1768C3B66AE1DE63 /* Sources/Incoming/Info.plist */,
 				8031B2DBC00F7F5BB809A942 /* Sources/Incoming/Incoming.entitlements */,
 			);
@@ -292,7 +294,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				39565F4C3073031D0029446C /* Assets.xcassets in Resources */,
+				A11C0A11C0A11C0A11C0A111 /* Sources/Incoming/Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -300,8 +302,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				39565F4D3073031D0029446C /* Assets.xcassets in Resources */,
 				59BC3E78A2D10920D4FCE56A /* Sources/IncomingClip/Resources/ringtone.wav in Resources */,
+				B22C0B22C0B22C0B22C0B222 /* Sources/IncomingClip/Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -368,7 +370,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/IncomingClip/IncomingClip.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/IncomingClip/Info.plist;
@@ -376,6 +378,10 @@
 				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osmcreations.incoming2.Clip;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -404,7 +410,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/IncomingClip/IncomingClip.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/IncomingClip/Info.plist;
@@ -412,6 +418,10 @@
 				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osmcreations.incoming2.Clip;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -422,10 +432,9 @@
 			baseConfigurationReference = C78C5B18D7576691B6C910C2 /* Config/Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Sources/Incoming/Incoming.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Incoming/Info.plist;
@@ -433,6 +442,10 @@
 				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osmcreations.incoming2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -460,10 +473,9 @@
 			baseConfigurationReference = B80D04D542DD80243BB8EF23 /* Config/Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_ENTITLEMENTS = Sources/Incoming/Incoming.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Incoming/Info.plist;
@@ -471,6 +483,10 @@
 				MARKETING_VERSION = 2.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.osmcreations.incoming2;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};

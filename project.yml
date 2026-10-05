@@ -7,7 +7,7 @@ settings:
   base:
     SWIFT_VERSION: "5.0"
     CODE_SIGN_STYLE: Automatic
-    CURRENT_PROJECT_VERSION: 1
+    CURRENT_PROJECT_VERSION: 4
     MARKETING_VERSION: 2.0.0
 
 targets:
@@ -25,6 +25,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.osmcreations.incoming2
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: Incoming 2.0
     info:
       path: Sources/Incoming/Info.plist
@@ -53,6 +54,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.osmcreations.incoming2.Clip
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         INFOPLIST_KEY_CFBundleDisplayName: Incoming
     info:
       path: Sources/IncomingClip/Info.plist
