@@ -18,7 +18,7 @@ targets:
       - path: Sources/Shared
       - path: Sources/Incoming
     resources:
-      - path: Sources/Incoming/Resources
+      - path: Sources/Shared/Resources/Assets.xcassets
     configFiles:
       Debug: Config/Debug.xcconfig
       Release: Config/Release.xcconfig
@@ -47,7 +47,8 @@ targets:
       - path: Sources/Shared
       - path: Sources/IncomingClip
     resources:
-      - path: Sources/IncomingClip/Resources
+      - path: Sources/Shared/Resources/Assets.xcassets
+      - path: Sources/IncomingClip/Resources/ringtone.wav
     configFiles:
       Debug: Config/Debug.xcconfig
       Release: Config/Release.xcconfig

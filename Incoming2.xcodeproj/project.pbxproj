@@ -27,8 +27,8 @@
 		839874776729F5C9F006F706 /* Sources/Incoming/App/AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07421FA72372B0DB1311379A /* Sources/Incoming/App/AppSession.swift */; };
 		859E6BB823772D2BB413B4B5 /* Sources/Incoming/Services/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967ECB1CBC3E1B19EF41D2AA /* Sources/Incoming/Services/KeychainStore.swift */; };
 		8F0E4D93FC59777584718AEE /* Sources/Shared/Design/IncomingTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2AC277989EC164695FDAAA7 /* Sources/Shared/Design/IncomingTheme.swift */; };
-		A11C0A11C0A11C0A11C0A111 /* Sources/Incoming/Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C33C0C33C0C33C0C33C0C333 /* Sources/Incoming/Resources/Assets.xcassets */; };
-		B22C0B22C0B22C0B22C0B222 /* Sources/IncomingClip/Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D44C0D44C0D44C0D44C0D444 /* Sources/IncomingClip/Resources/Assets.xcassets */; };
+		A11C0A11C0A11C0A11C0A111 /* Sources/Shared/Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C33C0C33C0C33C0C33C0C333 /* Sources/Shared/Resources/Assets.xcassets */; };
+		B22C0B22C0B22C0B22C0B222 /* Sources/Shared/Resources/Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C33C0C33C0C33C0C33C0C333 /* Sources/Shared/Resources/Assets.xcassets */; };
 		B4093C565AF5CAE2F91109D6 /* Sources/Shared/Models/ClipModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53556EC453FBC42217F284BE /* Sources/Shared/Models/ClipModels.swift */; };
 		BD403F1642643DAA8B18D420 /* Sources/Incoming/Features/Dashboard/DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D321213D873387A4F9DC29E6 /* Sources/Incoming/Features/Dashboard/DashboardView.swift */; };
 		C3C9A86164C339802A1B8497 /* Sources/Shared/Models/PerformanceModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E822E79C18CDA1E9984FAB9E /* Sources/Shared/Models/PerformanceModels.swift */; };
@@ -88,11 +88,10 @@
 		B4D5C4CF755002092CD2AC5D /* project.yml */ = {isa = PBXFileReference; lastKnownFileType = text.yaml; path = project.yml; sourceTree = "<group>"; };
 		B66BCDC810D3FCEA23D284EF /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		B80D04D542DD80243BB8EF23 /* Config/Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Release.xcconfig; sourceTree = "<group>"; };
-		C33C0C33C0C33C0C33C0C333 /* Sources/Incoming/Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Sources/Incoming/Resources/Assets.xcassets; sourceTree = "<group>"; };
+		C33C0C33C0C33C0C33C0C333 /* Sources/Shared/Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Sources/Shared/Resources/Assets.xcassets; sourceTree = "<group>"; };
 		C46873E3757D1E77061747EB /* Sources/Incoming/Features/Performance/InjectInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Incoming/Features/Performance/InjectInputView.swift; sourceTree = "<group>"; };
 		C78C5B18D7576691B6C910C2 /* Config/Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config/Debug.xcconfig; sourceTree = "<group>"; };
 		D321213D873387A4F9DC29E6 /* Sources/Incoming/Features/Dashboard/DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Incoming/Features/Dashboard/DashboardView.swift; sourceTree = "<group>"; };
-		D44C0D44C0D44C0D44C0D444 /* Sources/IncomingClip/Resources/Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Sources/IncomingClip/Resources/Assets.xcassets; sourceTree = "<group>"; };
 		D9260C89642F407BAB86DCB8 /* Incoming2.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Incoming2.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E210DC5986669B3E7608D674 /* Sources/IncomingClip/Features/ClipMenuView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Features/ClipMenuView.swift; sourceTree = "<group>"; };
 		E2AC277989EC164695FDAAA7 /* Sources/Shared/Design/IncomingTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Shared/Design/IncomingTheme.swift; sourceTree = "<group>"; };
@@ -125,6 +124,7 @@
 		44C7E229889FE9D1BB841A79 /* Shared */ = {
 			isa = PBXGroup;
 			children = (
+				C33C0C33C0C33C0C33C0C333 /* Sources/Shared/Resources/Assets.xcassets */,
 				E2AC277989EC164695FDAAA7 /* Sources/Shared/Design/IncomingTheme.swift */,
 				655560F882BDDBE8C89E4A35 /* Sources/Shared/Models/APIModels.swift */,
 				53556EC453FBC42217F284BE /* Sources/Shared/Models/ClipModels.swift */,
@@ -174,7 +174,6 @@
 				675DBCDDB6B3ED45D79EF235 /* Sources/IncomingClip/Features/SimulatedCallView.swift */,
 				2CE2F09A1D4B3C1472427DEE /* Sources/IncomingClip/Services/CallEffectsController.swift */,
 				58FBC5745BE6BC8113D2705A /* Sources/IncomingClip/Resources/ringtone.wav */,
-				D44C0D44C0D44C0D44C0D444 /* Sources/IncomingClip/Resources/Assets.xcassets */,
 				E5693F796FBC41F8DDBEC09E /* Sources/IncomingClip/Info.plist */,
 				6F0ECB26A59C20B49E0CE750 /* Sources/IncomingClip/IncomingClip.entitlements */,
 			);
@@ -206,7 +205,6 @@
 				ECE8DA45AE95AC463A167E57 /* Sources/Incoming/Features/Settings/SettingsView.swift */,
 				967ECB1CBC3E1B19EF41D2AA /* Sources/Incoming/Services/KeychainStore.swift */,
 				6700FF07865B814A9A4365EF /* Sources/Incoming/Services/NFCWriterService.swift */,
-				C33C0C33C0C33C0C33C0C333 /* Sources/Incoming/Resources/Assets.xcassets */,
 				AEA3850C1768C3B66AE1DE63 /* Sources/Incoming/Info.plist */,
 				8031B2DBC00F7F5BB809A942 /* Sources/Incoming/Incoming.entitlements */,
 			);
@@ -294,7 +292,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A11C0A11C0A11C0A11C0A111 /* Sources/Incoming/Resources/Assets.xcassets in Resources */,
+				A11C0A11C0A11C0A11C0A111 /* Sources/Shared/Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -303,7 +301,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				59BC3E78A2D10920D4FCE56A /* Sources/IncomingClip/Resources/ringtone.wav in Resources */,
-				B22C0B22C0B22C0B22C0B222 /* Sources/IncomingClip/Resources/Assets.xcassets in Resources */,
+				B22C0B22C0B22C0B22C0B222 /* Sources/Shared/Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
