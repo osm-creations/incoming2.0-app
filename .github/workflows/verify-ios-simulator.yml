@@ -1,22 +1,50 @@
-name: Verify iOS simulator build
+name: Verify App Clip UI
 on:
   push:
-    branches:
-      - 'verify/ios-720e394-simulator'
+    branches: ['verify/ios-720e394-simulator']
 permissions:
   contents: read
 jobs:
-  compile:
+  smoke:
     runs-on: macos-15
-    timeout-minutes: 15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: .github/ui-smoke
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Build app and embedded App Clip
+      - name: Prepare iPhone simulator and test host
         run: |
-          xcodebuild -version
-          xcodebuild -workspace Incoming2.xcworkspace \
-            -scheme Incoming2 -configuration Debug \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO build
+          if ! command -v xcodegen >/dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi
+          xcodegen generate
+          device="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k in sorted((r for r in d if ".iOS-" in r), key=lambda r: list(map(int,r.rsplit(".iOS-",1)[1].split("-"))), reverse=True) for x in d[k] if x["name"].startswith("iPhone") and x["isAvailable"]))')"
+          echo "DEVICE=$device" >> "$GITHUB_ENV"
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+      - name: Exercise Notes, long press, dialog choices, gestures and call slider
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true; cat worker.log' EXIT
+          for i in {1..10}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project ClipSmoke.xcodeproj -scheme ClipHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Smoke.xcresult test 2>&1 | tee test.log
+      - name: Export simulator screenshots
+        if: always()
+        run: |
+          if test -d Smoke.xcresult; then
+            xcrun xcresulttool export attachments --path Smoke.xcresult --output-path captures
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: app-clip-simulator-ui
+          path: |
+            .github/ui-smoke/captures
+            .github/ui-smoke/test.log
+            .github/ui-smoke/worker.log
+          if-no-files-found: ignore
