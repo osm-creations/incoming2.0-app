@@ -1,282 +1,351 @@
 import SwiftUI
 import UIKit
 
-struct ClipConfigListView: View {
+struct PrimaryClipSettingsView: View {
     @EnvironmentObject var session: AppSession
-    @State private var configs: [ClipConfigSummary] = []
-    @State private var showCreate = false
-    @State private var error: String?
 
-    var body: some View {
-        List {
-            ForEach(configs) { config in
-                NavigationLink {
-                    ClipConfigEditor(configId: config.id)
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(config.name)
-                            .font(.headline)
-                        Text(config.mode.title)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                    Button("Copy") {
-                        UIPasteboard.general.string = config.invocationUrl
-                    }
-                    .tint(.blue)
-                }
-            }
-
-            if let error {
-                Text(error).foregroundStyle(.red)
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .background(IncomingTheme.background)
-        .navigationTitle("Notes Input")
-        .toolbar {
-            Button { showCreate = true } label: { Image(systemName: "plus") }
-        }
-        .sheet(isPresented: $showCreate) {
-            CreateClipConfigView(onCreated: {
-                showCreate = false
-                Task { await load() }
-            })
-        }
-        .task { await load() }
+    private enum LoadState {
+        case loading
+        case ready(PrimaryClipData)
+        case failed(String)
     }
 
-    private func load() async {
-        do {
-            let data: ClipConfigsData = try await session.authenticated("/api/v1/clip-configs")
-            configs = data.configs
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-}
-
-struct CreateClipConfigView: View {
-    @EnvironmentObject var session: AppSession
-    @Environment(\.dismiss) var dismiss
-
-    @State private var name = "App Clip 1"
-    @State private var mode: ClipMode = .staticNote
-    @State private var text = "Test"
-    @State private var error: String?
-
-    let onCreated: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                TextField("Name", text: $name)
-
-                Picker("Mode", selection: $mode) {
-                    ForEach(ClipMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
-                    }
-                }
-
-                if mode != .menu {
-                    Section("Initial note text") {
-                        TextEditor(text: $text)
-                            .frame(minHeight: 140)
-                    }
-                }
-
-                if let error {
-                    Text(error).foregroundStyle(.red)
-                }
-            }
-            .navigationTitle("New App Clip")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Create") {
-                        Task { await create() }
-                    }
-                }
-            }
-        }
-    }
-
-    private func create() async {
-        do {
-            let _: ClipConfigCreateData = try await session.authenticated(
-                "/api/v1/clip-configs",
-                method: "POST",
-                body: AnyEncodable(
-                    ClipConfigCreateRequest(
-                        name: name,
-                        mode: mode,
-                        staticText: mode == .menu ? nil : text,
-                        openOverflowInitially: false,
-                        enabled: true
-                    )
-                )
-            )
-            onCreated()
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-}
-
-struct ClipConfigEditor: View {
-    @EnvironmentObject var session: AppSession
-    let configId: String
-
-    @State private var detail: ClipConfigDetailData?
+    @State private var loadState: LoadState = .loading
     @State private var draftText = ""
     @State private var savedText = ""
-    @State private var newOption = ""
+    @State private var callerName = ""
+    @State private var savedCallerName = ""
+    @State private var isSaving = false
+    @State private var copied = false
+    @State private var alertMessage: String?
     @StateObject private var nfc = NFCWriterService()
-    @State private var message: String?
 
     var body: some View {
-        Form {
-            if let detail {
-                Section("\(detail.config.name) • \(detail.config.mode.title)") {
-                    if detail.config.mode != .menu {
-                        TextEditor(text: $draftText)
-                            .frame(minHeight: 160)
-                        if !savedText.isEmpty {
-                            Text("Current saved text: \(savedText)")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                    } else {
-                        Text("This option shows your configured menu first. Once a menu option is chosen, the Notes screen remains editable.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
+        ZStack {
+            IncomingTheme.background.ignoresSafeArea()
 
-                    Button("Save") {
-                        Task { await save() }
-                    }
+            switch loadState {
+            case .loading:
+                VStack(spacing: 14) {
+                    ProgressView()
+                        .controlSize(.large)
+                    Text("Loading App Clip settings…")
+                        .font(.headline)
+                    Text("This should only take a moment.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
-                if detail.config.mode == .menu {
-                    Section("Menu options") {
-                        ForEach(detail.options) { option in
-                            Text(option.value)
-                        }
+            case .failed(let message):
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 34))
+                        .foregroundStyle(.yellow)
+                    Text("Couldn't load App Clip settings")
+                        .font(.title3.bold())
+                    Text(message)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+                    Button("Retry") {
+                        Task { await load() }
+                    }
+                    .buttonStyle(IncomingButtonStyle(prominent: true))
+                    .padding(.horizontal, 36)
+                }
 
-                        HStack {
-                            TextField("Add option", text: $newOption)
-                            Button("Add") {
-                                Task { await addOption() }
+            case .ready(let data):
+                ScrollView {
+                    VStack(spacing: 18) {
+                        IncomingCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("Force word or note", systemImage: "text.cursor")
+                                    .font(.headline)
+
+                                TextEditor(text: $draftText)
+                                    .frame(minHeight: 105, maxHeight: 150)
+                                    .scrollContentBackground(.hidden)
+                                    .padding(10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .fill(Color.black.opacity(0.25))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14)
+                                            .stroke(Color.white.opacity(0.10), lineWidth: 1)
+                                    )
+
+                                Text("This text appears when the App Clip opens Notes.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+
+                                Label("Caller name", systemImage: "phone.fill")
+                                    .font(.headline)
+                                TextField("Name shown on the call", text: $callerName)
+                                    .textFieldStyle(.roundedBorder)
+                                    .textInputAutocapitalization(.words)
+                                Text("Leave this blank to display Unknown.")
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+
+                                if draftText.utf16.count > 500 || callerName.utf16.count > 120 {
+                                    Text("Notes can contain up to 500 characters and caller names up to 120.")
+                                        .font(.footnote)
+                                        .foregroundStyle(.red)
+                                }
+
+                                Button {
+                                    Task { await save() }
+                                } label: {
+                                    HStack {
+                                        if isSaving {
+                                            ProgressView()
+                                                .tint(.white)
+                                        }
+                                        Text(isSaving ? "Saving…" : "Set & Save")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(IncomingButtonStyle(prominent: true))
+                                .disabled(
+                                    isSaving || (draftText == savedText && callerName == savedCallerName)
+                                        || draftText.utf16.count > 500 || callerName.utf16.count > 120
+                                )
                             }
-                            .disabled(newOption.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                            .disabled(isSaving)
+                        }
+
+                        IncomingCard {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("Saved note")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+
+                                Text(savedText.isEmpty ? "Not set" : savedText)
+                                    .font(.body.weight(.medium))
+                                    .foregroundStyle(savedText.isEmpty ? .secondary : .primary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text("Saved caller name")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.secondary)
+                                Text(savedCallerName.isEmpty ? "Unknown" : savedCallerName)
+                            }
+                        }
+
+                        IncomingCard {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Label("App Clip Link", systemImage: "link")
+                                    .font(.headline)
+
+                                Button {
+                                    UIPasteboard.general.string = data.invocationUrl
+                                    copied = true
+                                    Task { @MainActor in
+                                        try? await Task.sleep(for: .seconds(1.2))
+                                        copied = false
+                                    }
+                                } label: {
+                                    Label(copied ? "Copied" : "Copy Link", systemImage: copied ? "checkmark" : "doc.on.doc")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(IncomingButtonStyle(prominent: false))
+
+                                Button {
+                                    if let url = URL(string: data.invocationUrl) {
+                                        nfc.write(url: url)
+                                    }
+                                } label: {
+                                    Label("Write NFC Tag", systemImage: "wave.3.right")
+                                        .frame(maxWidth: .infinity)
+                                }
+                                .buttonStyle(IncomingButtonStyle(prominent: false))
+
+                                Text(data.invocationUrl)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                         }
                     }
+                    .padding(18)
+                    .frame(maxWidth: 620)
+                    .frame(maxWidth: .infinity)
                 }
-
-                Section("Invocation") {
-                    Button("Copy Link") {
-                        UIPasteboard.general.string = detail.invocationUrl
-                        message = "Link copied."
-                    }
-
-                    Button("Write NFC Tag") {
-                        if let url = URL(string: detail.invocationUrl) {
-                            nfc.write(url: url)
-                        }
-                    }
-
-                    Text(detail.invocationUrl)
-                        .font(.caption2)
-                        .textSelection(.enabled)
-                }
-            } else {
-                ProgressView()
-            }
-
-            if let message {
-                Text(message).foregroundStyle(.secondary)
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(IncomingTheme.background)
-        .navigationTitle("Configure")
+        .navigationTitle("App Clip Settings")
+        .navigationBarTitleDisplayMode(.inline)
         .task { await load() }
-        .alert("NFC", isPresented: Binding(get: { nfc.message != nil }, set: { if !$0 { nfc.message = nil } })) {
+        .alert(
+            "Incoming",
+            isPresented: Binding(
+                get: { alertMessage != nil },
+                set: { if !$0 { alertMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(alertMessage ?? "")
+        }
+        .alert(
+            "NFC",
+            isPresented: Binding(
+                get: { nfc.message != nil },
+                set: { if !$0 { nfc.message = nil } }
+            )
+        ) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(nfc.message ?? "")
         }
     }
 
-    private func load(preserveDraft: Bool = false) async {
+    private func load() async {
+        loadState = .loading
         do {
-            let loaded: ClipConfigDetailData = try await session.authenticated("/api/v1/clip-configs/\(configId)")
-            detail = loaded
+            let loaded: PrimaryClipData = try await session.authenticated("/api/v1/clip-configs/primary")
             let serverText = loaded.config.staticText ?? ""
+            draftText = serverText
             savedText = serverText
-            if !preserveDraft || draftText.isEmpty {
-                draftText = serverText
-            }
+            callerName = loaded.config.callerName ?? ""
+            savedCallerName = callerName
+            loadState = .ready(loaded)
         } catch {
-            message = error.localizedDescription
+            loadState = .failed(error.localizedDescription)
         }
     }
 
     private func save() async {
-        guard let detail else { return }
-        do {
-            let _: Updated = try await session.authenticated(
-                "/api/v1/clip-configs/\(configId)",
-                method: "PATCH",
-                body: AnyEncodable(
-                    ClipConfigPatchRequest(
-                        name: nil,
-                        mode: nil,
-                        staticText: detail.config.mode == .menu ? nil : draftText,
-                        openOverflowInitially: false,
-                        enabled: nil
-                    )
-                )
-            )
-            savedText = draftText
-            message = "Saved."
-            await load(preserveDraft: true)
-        } catch {
-            message = error.localizedDescription
-        }
-    }
+        guard case .ready = loadState, !isSaving else { return }
 
-    private func addOption() async {
+        isSaving = true
+        defer { isSaving = false }
+
         do {
-            let _: CreatedId = try await session.authenticated(
-                "/api/v1/clip-configs/\(configId)/options",
-                method: "POST",
-                body: AnyEncodable(
-                    ClipOptionCreateRequest(
-                        value: newOption,
-                        displayOrder: detail?.options.count ?? 0,
-                        enabled: true
-                    )
-                )
+            let updated: PrimaryClipData = try await session.authenticated(
+                "/api/v1/clip-configs/primary",
+                method: "PATCH",
+                body: AnyEncodable(PrimaryClipUpdateRequest(
+                    staticText: draftText == savedText ? nil : draftText,
+                    callerName: callerName == savedCallerName ? nil : callerName
+                ))
             )
-            newOption = ""
-            await load(preserveDraft: true)
+            savedText = updated.config.staticText ?? draftText
+            draftText = savedText
+            savedCallerName = updated.config.callerName ?? ""
+            callerName = savedCallerName
+            loadState = .ready(updated)
         } catch {
-            message = error.localizedDescription
+            alertMessage = error.localizedDescription
         }
     }
 }
 
-private struct Updated: Decodable { let updated: Bool }
-private struct CreatedId: Decodable { let id: String }
-
 struct NotesInputView: View {
+    @EnvironmentObject var session: AppSession
+    @Environment(\.dismiss) private var dismiss
+
+    @State private var loaded = false
+    @State private var draftText = ""
+    @State private var loadError: String?
+    @State private var saveError: String?
+    @State private var isSaving = false
+
     var body: some View {
-        ClipConfigListView()
-            .navigationTitle("Notes Input")
+        Group {
+            if let loadError {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        Image(systemName: "exclamationmark.triangle")
+                            .font(.system(size: 34))
+                            .foregroundStyle(.yellow)
+                        Text("Couldn't load note")
+                            .font(.title3.bold())
+                        Text(loadError)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 32)
+                        Button("Retry") {
+                            Task { await load() }
+                        }
+                        .buttonStyle(IncomingButtonStyle(prominent: true))
+                        .padding(.horizontal, 36)
+                    }
+                }
+            } else if loaded {
+                IncomingNotesView(
+                    initialText: draftText,
+                    showsSave: true,
+                    onBack: { dismiss() },
+                    onTextChanged: { draftText = $0 },
+                    onSave: { text in
+                        draftText = text
+                        Task { await save(text) }
+                    },
+                    onTripleTap: nil
+                )
+                .disabled(isSaving)
+            } else {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 12) {
+                        ProgressView()
+                        Text("Loading note…")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .task { await load() }
+        .alert(
+            "Couldn't Save",
+            isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveError ?? "")
+        }
+    }
+
+    private func load() async {
+        loaded = false
+        loadError = nil
+
+        do {
+            let data: PrimaryClipData = try await session.authenticated("/api/v1/clip-configs/primary")
+            draftText = data.config.staticText ?? ""
+            loaded = true
+        } catch {
+            loadError = error.localizedDescription
+        }
+    }
+
+    private func save(_ text: String) async {
+        guard !isSaving else { return }
+        guard text.utf16.count <= 500 else {
+            saveError = "Use up to 500 characters for the force word or note."
+            return
+        }
+        isSaving = true
+        defer { isSaving = false }
+        do {
+            let data: PrimaryClipData = try await session.authenticated(
+                "/api/v1/clip-configs/primary",
+                method: "PATCH",
+                body: AnyEncodable(PrimaryClipUpdateRequest(staticText: text))
+            )
+            draftText = data.config.staticText ?? text
+        } catch {
+            saveError = error.localizedDescription
+        }
     }
 }

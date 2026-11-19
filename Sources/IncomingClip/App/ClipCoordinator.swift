@@ -6,21 +6,27 @@ final class ClipCoordinator: ObservableObject {
     enum State {
         case awaitingInvocation
         case loading
-        case menu(SpectatorConfiguration, ClipSession)
-        case notes(text: String, session: ClipSession, revision: Int)
-        case blackWaiting(text: String, session: ClipSession, revision: Int)
-        case blackReady(text: String, session: ClipSession, revision: Int, injection: InjectionPayload)
-        case call(text: String, session: ClipSession, revision: Int, injection: InjectionPayload)
+        case notes(text: String, session: ClipSession)
+        case black(text: String, session: ClipSession)
+        case call(text: String, session: ClipSession)
         case expired
         case error(String)
     }
 
-    @Published var state: State = .awaitingInvocation
-    private var pollTask: Task<Void, Never>?
-
-    deinit { pollTask?.cancel() }
+    @Published private(set) var state: State = .awaitingInvocation
+    @Published private(set) var hasInjectUserId = false
+    private var configuredName: String?
+    private var selectedName: String?
+    private var usesLegacyNoteName = false
+    private var currentInvocation = UUID()
 
     func handle(url: URL) async {
+        let requestId = UUID()
+        currentInvocation = requestId
+        configuredName = nil
+        selectedName = nil
+        usesLegacyNoteName = false
+        hasInjectUserId = false
         guard let invocation = ClipInvocation(url: url) else {
             state = .error("This Incoming experience link is invalid.")
             return
@@ -31,47 +37,55 @@ final class ClipCoordinator: ObservableObject {
             let data: ClipBootstrapData = try await APIClient.shared.request(
                 "/api/v1/app-clip/bootstrap",
                 method: "POST",
-                body: AnyEncodable(
-                    ClipBootstrapRequest(
-                        publicUserId: invocation.publicUserId,
-                        publicConfigId: invocation.publicConfigId,
-                        capability: invocation.capability
-                    )
-                )
+                body: AnyEncodable(ClipBootstrapRequest(
+                    publicUserId: invocation.publicUserId,
+                    publicConfigId: invocation.publicConfigId,
+                    capability: invocation.capability
+                ))
             )
-
-            switch data.configuration.mode {
-            case .menu:
-                state = .menu(data.configuration, data.session)
-            case .staticNote, .directNotes:
-                state = .notes(text: data.configuration.staticText ?? "", session: data.session, revision: 0)
-            }
+            guard currentInvocation == requestId else { return }
+            configuredName = data.configuration.callerName
+            hasInjectUserId = data.configuration.hasInjectUserId == true
+            usesLegacyNoteName = data.configuration.hasInjectUserId == nil
+            state = .notes(text: data.configuration.staticText ?? "", session: data.session)
+        } catch APIClientError.server(let status, let code, _) where status == 401 || code == "SESSION_EXPIRED" {
+            guard currentInvocation == requestId else { return }
+            state = .expired
         } catch {
+            guard currentInvocation == requestId else { return }
             state = .error(error.localizedDescription)
         }
     }
 
-    func select(_ option: SpectatorOption, configuration: SpectatorConfiguration, session: ClipSession) async {
+    func fetchSelection(session: ClipSession) async throws -> String {
+        let response: InjectSelectionData
         do {
-            let data: ClipSelectionData = try await APIClient.shared.request(
-                "/api/v1/app-clip/sessions/\(session.id)/select",
-                method: "POST",
-                body: AnyEncodable(ClipSelectionRequest(optionId: option.id)),
+            response = try await APIClient.shared.request(
+                "/api/v1/app-clip/sessions/\(session.id)/selection",
                 clipToken: session.token
             )
-            state = .notes(text: data.selectedValue, session: session, revision: 0)
-        } catch {
-            state = .error(error.localizedDescription)
+        } catch let error as APIClientError {
+            if case .server(_, let code, _) = error, code == "INJECT_NOT_CONFIGURED",
+               case .notes(_, let active) = state, active.id == session.id {
+                hasInjectUserId = false
+            }
+            throw error
         }
+        let value = response.value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !value.isEmpty else {
+            throw APIClientError.server(status: 422, code: "NO_SELECTION", message: "No selection is available yet.")
+        }
+        return value
     }
 
-    func updateCurrentText(_ text: String, session: ClipSession, revision: Int) {
-        guard case .notes = state else { return }
-        state = .notes(text: text, session: session, revision: revision)
+    func useSelection(_ value: String, session: ClipSession) {
+        guard case .notes(_, let active) = state, active.id == session.id else { return }
+        selectedName = value
     }
 
-    func enterBlack(text: String, session: ClipSession, revision: Int) {
-        state = .blackWaiting(text: text, session: session, revision: revision)
+    func enterBlack(text: String, session: ClipSession) {
+        guard case .notes(_, let active) = state, active.id == session.id else { return }
+        state = .black(text: text, session: session)
         Task {
             let _: StatusData? = try? await APIClient.shared.request(
                 "/api/v1/app-clip/sessions/\(session.id)/status",
@@ -80,56 +94,30 @@ final class ClipCoordinator: ObservableObject {
                 clipToken: session.token
             )
         }
-        startPolling(text: text, session: session, revision: revision)
     }
 
-    private func startPolling(text: String, session: ClipSession, revision: Int) {
-        pollTask?.cancel()
-        pollTask = Task { [weak self] in
-            var last = revision
-            var failures = 0
-            while !Task.isCancelled {
-                do {
-                    let data: ClipStateData = try await APIClient.shared.request(
-                        "/api/v1/app-clip/sessions/\(session.id)/state?afterRevision=\(last)",
-                        clipToken: session.token
-                    )
-                    failures = 0
-                    if data.changed, let payload = data.payload {
-                        last = data.revision
-                        await MainActor.run {
-                            self?.state = .blackReady(text: text, session: session, revision: last, injection: payload)
-                        }
-                        return
-                    }
-                } catch APIClientError.server(let status, let code, _) where status == 401 || code == "SESSION_EXPIRED" {
-                    await MainActor.run { self?.state = .expired }
-                    return
-                } catch {
-                    failures += 1
-                }
+    func reveal(text: String, session: ClipSession) {
+        guard case .black(_, let active) = state, active.id == session.id else { return }
+        state = .call(text: text, session: session)
+    }
 
-                let delay = min(8.0, 2.5 + Double(failures))
-                try? await Task.sleep(for: .seconds(delay))
-            }
+    func finishCall(text: String, session: ClipSession) {
+        guard case .call(_, let active) = state, active.id == session.id else { return }
+        state = .notes(text: text, session: session)
+    }
+
+    func callerName(from text: String) -> String {
+        if let selectedName { return selectedName }
+        if let configuredName, !configuredName.isEmpty { return configuredName }
+        if usesLegacyNoteName {
+            return text.split(whereSeparator: \.isNewline)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .first(where: { !$0.isEmpty }) ?? "Unknown"
         }
-    }
-
-    func reveal(text: String, session: ClipSession, revision: Int, injection: InjectionPayload) {
-        pollTask?.cancel()
-        state = .call(text: text, session: session, revision: revision, injection: injection)
-    }
-
-    func finishCall(result: String, text: String, session: ClipSession, revision: Int) async {
-        let _: ConsumedData? = try? await APIClient.shared.request(
-            "/api/v1/app-clip/sessions/\(session.id)/consume",
-            method: "POST",
-            body: AnyEncodable(ConsumeRequest(result: result)),
-            clipToken: session.token
-        )
-        state = .notes(text: text, session: session, revision: revision)
+        return "Unknown"
     }
 }
 
-private struct StatusData: Decodable { let status: String }
-private struct ConsumedData: Decodable { let consumed: Bool }
+private struct StatusData: Decodable {
+    let status: String
+}

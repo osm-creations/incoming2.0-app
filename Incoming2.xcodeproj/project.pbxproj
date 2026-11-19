@@ -22,7 +22,6 @@
 		4828EBA1F353C812C5054F58 /* Sources/Incoming/Services/NFCWriterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6700FF07865B814A9A4365EF /* Sources/Incoming/Services/NFCWriterService.swift */; };
 		5414D16376B31EE13AF1AD49 /* Sources/IncomingClip/Features/SimulatedCallView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 675DBCDDB6B3ED45D79EF235 /* Sources/IncomingClip/Features/SimulatedCallView.swift */; };
 		58AC4DD2FBB81E44F76FB909 /* Sources/Shared/Networking/APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E1DC21E2204DCCB667B6659 /* Sources/Shared/Networking/APIClient.swift */; };
-		59BC3E78A2D10920D4FCE56A /* Sources/IncomingClip/Resources/ringtone.wav in Resources */ = {isa = PBXBuildFile; fileRef = 58FBC5745BE6BC8113D2705A /* Sources/IncomingClip/Resources/ringtone.wav */; };
 		6639983151955791BEADE799 /* Sources/IncomingClip/Features/NotesReplicaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2433FF7AE4CA3713415D6A06 /* Sources/IncomingClip/Features/NotesReplicaView.swift */; };
 		839874776729F5C9F006F706 /* Sources/Incoming/App/AppSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07421FA72372B0DB1311379A /* Sources/Incoming/App/AppSession.swift */; };
 		859E6BB823772D2BB413B4B5 /* Sources/Incoming/Services/KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 967ECB1CBC3E1B19EF41D2AA /* Sources/Incoming/Services/KeychainStore.swift */; };
@@ -73,7 +72,6 @@
 		2A2E2A026D3BA27245F41FCA /* Sources/IncomingClip/Features/ClipRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Features/ClipRootView.swift; sourceTree = "<group>"; };
 		2CE2F09A1D4B3C1472427DEE /* Sources/IncomingClip/Services/CallEffectsController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Services/CallEffectsController.swift; sourceTree = "<group>"; };
 		53556EC453FBC42217F284BE /* Sources/Shared/Models/ClipModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Shared/Models/ClipModels.swift; sourceTree = "<group>"; };
-		58FBC5745BE6BC8113D2705A /* Sources/IncomingClip/Resources/ringtone.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = Sources/IncomingClip/Resources/ringtone.wav; sourceTree = "<group>"; };
 		655560F882BDDBE8C89E4A35 /* Sources/Shared/Models/APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Shared/Models/APIModels.swift; sourceTree = "<group>"; };
 		6700FF07865B814A9A4365EF /* Sources/Incoming/Services/NFCWriterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/Incoming/Services/NFCWriterService.swift; sourceTree = "<group>"; };
 		675DBCDDB6B3ED45D79EF235 /* Sources/IncomingClip/Features/SimulatedCallView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sources/IncomingClip/Features/SimulatedCallView.swift; sourceTree = "<group>"; };
@@ -173,7 +171,6 @@
 				2433FF7AE4CA3713415D6A06 /* Sources/IncomingClip/Features/NotesReplicaView.swift */,
 				675DBCDDB6B3ED45D79EF235 /* Sources/IncomingClip/Features/SimulatedCallView.swift */,
 				2CE2F09A1D4B3C1472427DEE /* Sources/IncomingClip/Services/CallEffectsController.swift */,
-				58FBC5745BE6BC8113D2705A /* Sources/IncomingClip/Resources/ringtone.wav */,
 				E5693F796FBC41F8DDBEC09E /* Sources/IncomingClip/Info.plist */,
 				6F0ECB26A59C20B49E0CE750 /* Sources/IncomingClip/IncomingClip.entitlements */,
 			);
@@ -300,7 +297,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				59BC3E78A2D10920D4FCE56A /* Sources/IncomingClip/Resources/ringtone.wav in Resources */,
 				B22C0B22C0B22C0B22C0B222 /* Sources/Shared/Resources/Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -368,7 +364,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/IncomingClip/IncomingClip.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/IncomingClip/Info.plist;
@@ -408,7 +404,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/IncomingClip/IncomingClip.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/IncomingClip/Info.plist;
@@ -432,7 +428,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/Incoming/Incoming.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Incoming/Info.plist;
@@ -473,7 +469,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_ENTITLEMENTS = Sources/Incoming/Incoming.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 4;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = F34Q6U9QKH;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Sources/Incoming/Info.plist;

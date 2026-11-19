@@ -1,16 +1,30 @@
-import Foundation
-import AVFoundation
+import Combine
 import UIKit
 
 @MainActor
 final class CallEffectsController: ObservableObject {
-    private var player: AVAudioPlayer?
-    private var timer: Timer?
+    private var vibrationTask: Task<Void, Never>?
+
     func start() {
-        if let url=Bundle.main.url(forResource:"ringtone",withExtension:"wav") { player=try? AVAudioPlayer(contentsOf:url);player?.numberOfLoops = -1;player?.volume=0.8;player?.play() }
-        let haptic=UINotificationFeedbackGenerator();haptic.prepare();haptic.notificationOccurred(.warning)
-        timer=Timer.scheduledTimer(withTimeInterval:1.4,repeats:true){_ in Task{@MainActor in let g=UINotificationFeedbackGenerator();g.notificationOccurred(.warning)}}
+        guard vibrationTask == nil else { return }
+        vibrationTask = Task { @MainActor in
+            let generator = UINotificationFeedbackGenerator()
+            while !Task.isCancelled {
+                generator.prepare()
+                generator.notificationOccurred(.warning)
+                do {
+                    try await Task.sleep(for: .milliseconds(1150))
+                } catch {
+                    return
+                }
+            }
+        }
     }
-    func stop(){player?.stop();player=nil;timer?.invalidate();timer=nil}
-    deinit { timer?.invalidate(); player?.stop() }
+
+    func stop() {
+        vibrationTask?.cancel()
+        vibrationTask = nil
+    }
+
+    deinit { vibrationTask?.cancel() }
 }

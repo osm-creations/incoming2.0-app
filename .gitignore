@@ -1,0 +1,14 @@
+# Xcode / Swift
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+
+# macOS
+.DS_Store
+
+# Local-only configuration / secrets if added later
+Config/Local.xcconfig
+*.mobileprovision

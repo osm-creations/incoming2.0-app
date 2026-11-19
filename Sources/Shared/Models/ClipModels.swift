@@ -27,7 +27,17 @@ struct ClipConfigSummary: Decodable, Identifiable {
 struct ClipConfigsData: Decodable { let configs: [ClipConfigSummary] }
 struct ClipConfigCreateRequest: Encodable { let name: String; let mode: ClipMode; let staticText: String?; let openOverflowInitially: Bool; let enabled: Bool }
 struct ClipConfigCreateData: Decodable { let config: ClipConfigRaw; let invocationUrl: String }
-struct ClipConfigRaw: Decodable { let id: String; let publicConfigId: String; let name: String; let mode: ClipMode; let enabled: Int; let staticText: String?; let openOverflowInitially: Int }
+struct ClipConfigRaw: Decodable {
+    let id: String
+    let publicConfigId: String
+    let name: String
+    let mode: ClipMode
+    let enabled: Int
+    let staticText: String?
+    let callerName: String?
+    let injectUserId: String?
+    let openOverflowInitially: Int
+}
 struct ClipConfigDetailData: Decodable { let config: ClipConfigRaw; let options: [ClipOptionAdmin]; let invocationUrl: String }
 struct ClipOptionAdmin: Decodable, Identifiable { let id: String; let value: String; let displayOrder: Int; let enabled: Int }
 
@@ -40,10 +50,28 @@ struct ClipConfigPatchRequest: Encodable {
 }
 struct ClipOptionCreateRequest: Encodable { let value: String; let displayOrder: Int; let enabled: Bool }
 
+
+struct PrimaryClipData: Decodable {
+    let config: ClipConfigRaw
+    let invocationUrl: String
+}
+
+struct PrimaryClipUpdateRequest: Encodable {
+    var staticText: String? = nil
+    var callerName: String? = nil
+    var injectUserId: String? = nil
+}
+
+struct InjectSelectionData: Decodable {
+    let value: String
+}
+
 struct ClipBootstrapRequest: Encodable { let publicUserId: String; let publicConfigId: String; let capability: String }
 struct ClipBootstrapData: Decodable { let session: ClipSession; let configuration: SpectatorConfiguration }
 struct ClipSession: Codable { let id: String; let token: String; let expiresAt: String }
 struct SpectatorConfiguration: Decodable {
+    let callerName: String?
+    let hasInjectUserId: Bool?
     let name: String
     let mode: ClipMode
     let staticText: String?

@@ -19,7 +19,7 @@ struct LoginView: View {
                     if let error { Text(error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading) }
                     Button(busy ? "Signing in…" : "Login") { Task { await signIn() } }.buttonStyle(IncomingButtonStyle(prominent: true)).disabled(busy || login.isEmpty || password.isEmpty)
                 } }
-                Text("Forgot Password? will be connected in a later phase.").font(.caption).foregroundStyle(.secondary)
+                Text("Forgot your password? Ask your administrator to reset it.").font(.caption).foregroundStyle(.secondary)
                 Spacer()
             }.padding(24).frame(maxWidth: 520)
         }

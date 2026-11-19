@@ -1,7 +1,30 @@
 import SwiftUI
 
+/// Legacy compatibility view.
+///
+/// Incoming 2.0 no longer presents multiple App Clip menu options. New App Clip
+/// sessions open directly into the editable Notes experience. This view stays in
+/// the project only so older project references/build files continue to compile.
 struct ClipMenuView: View {
-    @EnvironmentObject var coordinator:ClipCoordinator
-    let configuration:SpectatorConfiguration; let session:ClipSession
-    var body:some View{NavigationStack{List(configuration.options){option in Button(option.value){Task{await coordinator.select(option,configuration:configuration,session:session)}}.foregroundStyle(.primary)}.scrollContentBackground(.hidden).background(Color.black).navigationTitle(configuration.name)}}
+    let configuration: SpectatorConfiguration
+    let session: ClipSession
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                ProgressView()
+                    .tint(.white)
+
+                Text("Opening Notes…")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+
+                Text(configuration.name)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
 }

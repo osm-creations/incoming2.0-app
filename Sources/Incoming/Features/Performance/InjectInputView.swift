@@ -2,145 +2,90 @@ import SwiftUI
 
 struct InjectInputView: View {
     @EnvironmentObject var session: AppSession
+    @State private var userId = ""
+    @State private var savedUserId = ""
+    @State private var isLoading = true
+    @State private var isSaving = false
+    @State private var loadError: String?
+    @State private var saveError: String?
+    @State private var didSave = false
 
-    @State private var sessions: [PerformanceSession] = []
-    @State private var selectedId = ""
-    @State private var value = ""
-    @State private var message: String?
-    @State private var busy = false
+    private var trimmedId: String { userId.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private var isValid: Bool {
+        trimmedId.isEmpty || trimmedId.range(of: #"^[A-Za-z0-9_-]{1,128}$"#, options: .regularExpression) != nil
+    }
 
     var body: some View {
         Form {
-            Section("Active App Clip session") {
-                if sessions.isEmpty {
-                    Text("No active spectator session.")
-                        .foregroundStyle(.secondary)
-                } else {
-                    Picker("Session", selection: $selectedId) {
-                        ForEach(sessions) { performanceSession in
-                            Text("\(performanceSession.configName) • \(performanceSession.status)")
-                                .tag(performanceSession.publicSessionId)
-                        }
-                    }
-                }
-            }
-
-            Section("Injection") {
-                TextField("Caller / reveal text", text: $value)
-                    .textInputAutocapitalization(.words)
-
-                Button("Send Injection") {
-                    Task { await send() }
-                }
-                .disabled(
-                    selectedId.isEmpty ||
-                    value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
-                    busy
-                )
-            }
-
-            if let message {
+            if isLoading {
+                ProgressView("Loading Inject settings…")
+            } else if let loadError {
+                Text(loadError)
+                Button("Retry") { Task { await load() } }
+            } else {
                 Section {
-                    Text(message)
-                        .foregroundStyle(message.hasPrefix("Sent") ? .green : .red)
+                    TextField("11z user ID", text: Binding(get: { userId }, set: { newValue in
+                        userId = newValue
+                        didSave = false
+                        saveError = nil
+                    }))
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .disabled(isSaving)
+                } header: {
+                    Text("Inject")
+                } footer: {
+                    Text("Save your 11z user ID to enable Share in App Clip Notes. Long-press Share to preview the latest selection. Clear the ID and save to turn it off.")
+                }
+
+                if !isValid {
+                    Text("Use up to 128 letters, numbers, hyphens or underscores.")
+                        .foregroundStyle(.red)
+                }
+                Button(isSaving ? "Saving…" : "Save") { Task { await save() } }
+                    .disabled(isSaving || !isValid || trimmedId == savedUserId)
+                if let saveError {
+                    Text(saveError).foregroundStyle(.red)
+                } else if didSave {
+                    Text(savedUserId.isEmpty ? "Inject is off." : "11z user ID saved.")
+                        .foregroundStyle(.secondary)
                 }
             }
         }
-        .scrollContentBackground(.hidden)
-        .background(IncomingTheme.background)
         .navigationTitle("Inject Input")
         .task { await load() }
     }
 
     private func load() async {
-        let data: PerformanceSessionsData? = try? await session.authenticated(
-            "/api/v1/performance/sessions"
-        )
-
-        sessions = data?.sessions ?? []
-
-        if selectedId.isEmpty {
-            selectedId = sessions.first?.publicSessionId ?? ""
-        }
-    }
-
-    private func send() async {
-        busy = true
-        defer { busy = false }
-
+        isLoading = true
+        loadError = nil
+        defer { isLoading = false }
         do {
-            let _: InjectData = try await session.authenticated(
-                "/api/v1/performance/sessions/\(selectedId)/inject",
-                method: "POST",
-                body: AnyEncodable(InjectRequest(value: value))
-            )
-            message = "Sent. App Clip can now reveal on the next triple tap."
+            let data: PrimaryClipData = try await session.authenticated("/api/v1/clip-configs/primary")
+            savedUserId = data.config.injectUserId ?? ""
+            userId = savedUserId
         } catch {
-            message = error.localizedDescription
+            loadError = error.localizedDescription
         }
     }
-}
 
-struct ClearInjectionView: View {
-    @EnvironmentObject var session: AppSession
-
-    @State private var sessions: [PerformanceSession] = []
-    @State private var selected = ""
-    @State private var message = ""
-
-    var body: some View {
-        Form {
-            Section("Session") {
-                if sessions.isEmpty {
-                    Text("No active sessions")
-                } else {
-                    Picker("Session", selection: $selected) {
-                        ForEach(sessions) { performanceSession in
-                            Text(performanceSession.configName)
-                                .tag(performanceSession.publicSessionId)
-                        }
-                    }
-                }
-            }
-
-            Section {
-                Button("Clear Pending Injection", role: .destructive) {
-                    Task { await clear() }
-                }
-                .disabled(selected.isEmpty)
-
-                if !message.isEmpty {
-                    Text(message)
-                }
-            }
-        }
-        .scrollContentBackground(.hidden)
-        .background(IncomingTheme.background)
-        .navigationTitle("Clear")
-        .task { await load() }
-    }
-
-    private func load() async {
-        let data: PerformanceSessionsData? = try? await session.authenticated(
-            "/api/v1/performance/sessions"
-        )
-        sessions = data?.sessions ?? []
-        selected = sessions.first?.publicSessionId ?? ""
-    }
-
-    private func clear() async {
+    private func save() async {
+        guard !isSaving, isValid else { return }
+        isSaving = true
+        saveError = nil
+        didSave = false
+        defer { isSaving = false }
         do {
-            let _: SimpleCleared = try await session.authenticated(
-                "/api/v1/performance/sessions/\(selected)/injection",
-                method: "DELETE"
+            let data: PrimaryClipData = try await session.authenticated(
+                "/api/v1/clip-configs/primary",
+                method: "PATCH",
+                body: AnyEncodable(PrimaryClipUpdateRequest(injectUserId: trimmedId))
             )
-            message = "Cleared."
+            savedUserId = data.config.injectUserId ?? ""
+            userId = savedUserId
+            didSave = true
         } catch {
-            message = error.localizedDescription
+            saveError = error.localizedDescription
         }
     }
-}
-
-private struct SimpleCleared: Decodable {
-    let cleared: Bool
 }
