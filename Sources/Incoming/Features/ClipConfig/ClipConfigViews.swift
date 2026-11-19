@@ -243,6 +243,7 @@ struct PrimaryClipSettingsView: View {
     }
 }
 
+@MainActor
 struct NotesInputView: View {
     @EnvironmentObject var session: AppSession
     @Environment(\.dismiss) private var dismiss
@@ -252,6 +253,7 @@ struct NotesInputView: View {
     @State private var loadError: String?
     @State private var saveError: String?
     @State private var isSaving = false
+    @State private var lastConfirmedText: String?
 
     var body: some View {
         Group {
@@ -282,13 +284,20 @@ struct NotesInputView: View {
                     showsSave: true,
                     onBack: { dismiss() },
                     onTextChanged: { draftText = $0 },
-                    onSave: { text in
-                        draftText = text
-                        Task { await save(text) }
-                    },
+                    onSave: save,
                     onTripleTap: nil
                 )
                 .disabled(isSaving)
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if isSaving || lastConfirmedText == draftText {
+                        Text(isSaving ? "Saving…" : "Note saved")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 4)
+                            .background(Color.black)
+                    }
+                }
             } else {
                 ZStack {
                     Color.black.ignoresSafeArea()
@@ -329,23 +338,30 @@ struct NotesInputView: View {
         }
     }
 
-    private func save(_ text: String) async {
+    private func save(_ text: String) {
         guard !isSaving else { return }
         guard text.utf16.count <= 500 else {
             saveError = "Use up to 500 characters for the force word or note."
             return
         }
         isSaving = true
-        defer { isSaving = false }
-        do {
-            let data: PrimaryClipData = try await session.authenticated(
-                "/api/v1/clip-configs/primary",
-                method: "PATCH",
-                body: AnyEncodable(PrimaryClipUpdateRequest(staticText: text))
-            )
-            draftText = data.config.staticText ?? text
-        } catch {
-            saveError = error.localizedDescription
+        lastConfirmedText = nil
+        Task {
+            defer { isSaving = false }
+            do {
+                let data: PrimaryClipData = try await session.authenticated(
+                    "/api/v1/clip-configs/primary",
+                    method: "PATCH",
+                    body: AnyEncodable(PrimaryClipUpdateRequest(staticText: text))
+                )
+                if (data.config.staticText ?? "") == text {
+                    lastConfirmedText = text
+                } else {
+                    saveError = "The server did not confirm this note. Please try saving again."
+                }
+            } catch {
+                saveError = error.localizedDescription
+            }
         }
     }
 }
