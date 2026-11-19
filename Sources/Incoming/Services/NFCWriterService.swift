@@ -1,5 +1,5 @@
 import Foundation
-import CoreNFC
+@preconcurrency import CoreNFC
 
 @MainActor
 final class NFCWriterService: NSObject, ObservableObject, NFCTagReaderSessionDelegate {

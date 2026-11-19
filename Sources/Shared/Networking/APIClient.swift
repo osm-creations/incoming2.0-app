@@ -10,6 +10,9 @@ enum APIClientError: LocalizedError {
         switch self {
         case .invalidBaseURL: "Invalid API base URL."
         case .invalidResponse: "Invalid server response."
+        case .server(_, "INJECT_NOT_CONFIGURED", _): "Inject is off for this performer."
+        case .server(_, "NO_SELECTION", _): "No caller name is available. Choose a value and try again."
+        case .server(_, "SELECTION_UNAVAILABLE", _): "Could not load the Inject selection. Please try again."
         case .server(_, _, let message): message
         case .decoding: "Could not read the server response."
         }
