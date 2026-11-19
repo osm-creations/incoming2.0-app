@@ -66,9 +66,12 @@ struct IncomingNotesView: View {
     let onTripleTap: ((String) -> Void)?
     let onShareLongPress: (() -> Void)?
     let shareIsLoading: Bool
+    let showsSystemShare: Bool
 
     @State private var noteText: String
     @State private var openedAt = Date()
+    @State private var isInsertingLink = false
+    @State private var linkDraft = ""
     @StateObject private var editor = NoteEditorController()
 
     init(
@@ -79,7 +82,8 @@ struct IncomingNotesView: View {
         onSave: ((String) -> Void)? = nil,
         onTripleTap: ((String) -> Void)? = nil,
         onShareLongPress: (() -> Void)? = nil,
-        shareIsLoading: Bool = false
+        shareIsLoading: Bool = false,
+        showsSystemShare: Bool = false
     ) {
         self.showsSave = showsSave
         self.onBack = onBack
@@ -88,6 +92,7 @@ struct IncomingNotesView: View {
         self.onTripleTap = onTripleTap
         self.onShareLongPress = onShareLongPress
         self.shareIsLoading = shareIsLoading
+        self.showsSystemShare = showsSystemShare
         _noteText = State(initialValue: initialText)
     }
 
@@ -95,26 +100,30 @@ struct IncomingNotesView: View {
         VStack(spacing: 0) {
             notesTopBar
                 .padding(.horizontal, 16)
-                .padding(.top, 4)
+                .padding(.top, 2)
 
             Text(openedAt.formatted(date: .long, time: .shortened))
                 .font(.footnote)
-                .foregroundStyle(.secondary)
-                .padding(.top, 12)
+                .foregroundStyle(Color(white: 0.57))
+                .padding(.top, 7)
 
             IncomingTripleTapTextView(
-                text: $noteText,
-                editor: editor,
-                onTextChanged: onTextChanged,
-                onTripleTap: onTripleTap
+                text: $noteText, editor: editor,
+                onTextChanged: onTextChanged, onTripleTap: onTripleTap
             )
-            .padding(.horizontal, 22)
-            .padding(.top, 18)
+            .padding(.horizontal, 24)
+            .padding(.top, 5)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            notesBottomBar
-                .padding(.horizontal, 16)
-                .padding(.bottom, 6)
+            if editor.isEditing {
+                editingTools
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 7)
+            } else {
+                idleTools
+                    .padding(.horizontal, 23)
+                    .padding(.bottom, 2)
+            }
         }
         .tint(IncomingTheme.notesYellow)
         .foregroundStyle(.white)
@@ -122,112 +131,185 @@ struct IncomingNotesView: View {
         .background(Color.black.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden(false)
+        .alert("Insert Link", isPresented: $isInsertingLink) {
+            TextField("https://example.com", text: $linkDraft)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+            Button("Insert") { editor.insert(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines)) }
+                .disabled(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Button("Cancel", role: .cancel) {}
+        }
     }
 
     private var notesTopBar: some View {
-        HStack(spacing: 8) {
-            if let onBack {
-                Button(action: onBack) {
-                    Image(systemName: "chevron.left")
-                        .frame(width: 44, height: 44)
-                        .incomingGlassCircle()
-                }
-                .accessibilityLabel("Back")
-            } else {
-                Text("Notes")
-                    .font(.headline)
-                    .foregroundStyle(IncomingTheme.notesYellow)
-                    .accessibilityAddTraits(.isHeader)
+        HStack(spacing: 10) {
+            Button {
+                if let onBack { onBack() }
+                else { editor.textView?.resignFirstResponder() }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20, weight: .semibold))
+                    .frame(width: 42, height: 42)
+                    .noteControlBackground(Circle())
             }
+            .accessibilityLabel(onBack == nil ? "End editing" : "Back")
+            .disabled(onBack == nil && !editor.isEditing)
+
             Spacer(minLength: 4)
 
-            if let onShareLongPress {
-                ZStack {
-                    if shareIsLoading {
-                        ProgressView().tint(IncomingTheme.notesYellow)
-                    } else {
-                        Image(systemName: "square.and.arrow.up")
+            HStack(spacing: 0) {
+                if let onShareLongPress {
+                    Group {
+                        if shareIsLoading { ProgressView().tint(IncomingTheme.notesYellow) }
+                        else { Image(systemName: "square.and.arrow.up") }
                     }
+                    .frame(width: 48, height: 42)
+                    .contentShape(Rectangle())
+                    .onLongPressGesture(minimumDuration: 0.55, perform: onShareLongPress)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel(shareIsLoading ? "Fetching selection" : "Share")
+                    .accessibilityHint("Fetches a caller name for this performance")
+                    .accessibilityAction { onShareLongPress() }
+                    .disabled(shareIsLoading)
+                } else if showsSystemShare {
+                    ShareLink(item: noteText) {
+                        Image(systemName: "square.and.arrow.up")
+                            .frame(width: 48, height: 42)
+                    }
+                    .accessibilityLabel("Share")
+                    .disabled(noteText.isEmpty)
+                    .opacity(noteText.isEmpty ? 0.32 : 1)
                 }
-                .frame(width: 44, height: 44)
-                .incomingGlassCircle()
-                .contentShape(Circle())
-                .onLongPressGesture(minimumDuration: 0.55, perform: onShareLongPress)
-                .accessibilityElement(children: .ignore)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityLabel(shareIsLoading ? "Fetching selection" : "Share")
-                .accessibilityHint("Fetches a caller name for this performance")
-                .accessibilityAction { onShareLongPress() }
-                .disabled(shareIsLoading)
-            }
-
-            Menu {
-                Button {
-                    UIPasteboard.general.string = noteText
+                Menu {
+                    Button { UIPasteboard.general.string = noteText } label: {
+                        Label("Copy Note", systemImage: "doc.on.doc")
+                    }
+                    .disabled(noteText.isEmpty)
+                    if showsSave {
+                        Button { finishEditing() } label: {
+                            Label("Save Note", systemImage: "checkmark")
+                        }
+                    }
                 } label: {
-                    Label("Copy Note", systemImage: "doc.on.doc")
+                    Image(systemName: "ellipsis")
+                        .frame(width: 48, height: 42)
                 }
-                .disabled(noteText.isEmpty)
-            } label: {
-                Image(systemName: "ellipsis")
-                    .frame(width: 44, height: 44)
-                    .incomingGlassCircle()
+                .accessibilityLabel("Note options")
             }
-            .accessibilityLabel("Note options")
+            .noteControlBackground(Capsule())
 
-            if showsSave {
-                Button {
-                    onTextChanged(noteText)
-                    onSave?(noteText)
-                    editor.textView?.resignFirstResponder()
-                } label: {
+            if editor.isEditing {
+                Button(action: finishEditing) {
                     Image(systemName: "checkmark")
-                        .fontWeight(.bold)
-                        .foregroundStyle(.black)
-                        .frame(width: 44, height: 44)
-                        .background(IncomingTheme.notesYellow, in: Circle())
+                        .font(.system(size: 22, weight: .medium))
+                        .foregroundStyle(.white)
+                        .frame(width: 42, height: 42)
+                        .background(Color(red: 0.94, green: 0.71, blue: 0), in: Circle())
+                        .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.7))
                 }
-                .accessibilityLabel("Save note")
+                .accessibilityLabel(showsSave ? "Save note" : "Done")
             }
         }
-        .font(.title3.weight(.medium))
+        .font(.system(size: 19, weight: .medium))
     }
 
-    private var notesBottomBar: some View {
+    private func finishEditing() {
+        onTextChanged(noteText)
+        onSave?(noteText)
+        editor.textView?.resignFirstResponder()
+    }
+
+    private var idleTools: some View {
         HStack {
             HStack(spacing: 4) {
-                Button { editor.textView?.undoManager?.undo() } label: {
-                    Image(systemName: "arrow.uturn.backward")
-                        .frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("Undo typing")
-                .disabled(!editor.canUndo)
-
-                Button { editor.insertListItem() } label: {
-                    Image(systemName: "list.bullet")
-                        .frame(width: 44, height: 44)
-                }
-                .accessibilityLabel("Insert bullet")
+                checklistButton
+                linkButton
+                drawingSymbol
             }
             .padding(.horizontal, 4)
-            .incomingGlassCapsule()
+            .noteControlBackground(Capsule())
 
             Spacer()
-
-            Button {
-                if editor.isEditing {
-                    editor.textView?.resignFirstResponder()
-                } else {
-                    editor.textView?.becomeFirstResponder()
-                }
-            } label: {
-                Image(systemName: editor.isEditing ? "keyboard.chevron.compact.down" : "square.and.pencil")
+            Button { editor.textView?.becomeFirstResponder() } label: {
+                Image(systemName: "square.and.pencil")
                     .frame(width: 44, height: 44)
-                    .incomingGlassCircle()
+                    .noteControlBackground(Circle())
             }
-            .accessibilityLabel(editor.isEditing ? "Hide keyboard" : "Edit note")
+            .accessibilityLabel("Edit note")
         }
-        .font(.title3)
+        .font(.system(size: 19))
+    }
+
+    private var editingTools: some View {
+        ScrollView(.horizontal) {
+            HStack(spacing: 12) {
+                Menu {
+                    Button("Uppercase") { editor.changeCase(uppercase: true) }
+                    Button("Lowercase") { editor.changeCase(uppercase: false) }
+                } label: {
+                    Text("Aa").font(.system(size: 19))
+                        .frame(width: 52, height: 44)
+                }
+                .accessibilityLabel("Text case")
+
+                checklistButton.frame(width: 58)
+                Button { editor.insertLine("Column 1\tColumn 2\n") } label: {
+                    Image(systemName: "tablecells").frame(width: 56, height: 44)
+                }
+                .accessibilityLabel("Insert tabbed columns")
+                linkButton.frame(width: 54)
+                drawingSymbol.frame(width: 52)
+                Button { editor.textView?.undoManager?.undo() } label: {
+                    Image(systemName: "arrow.uturn.backward").frame(width: 48, height: 44)
+                }
+                .accessibilityLabel("Undo")
+                .disabled(!editor.canUndo)
+            }
+        }
+        .font(.system(size: 19))
+        .scrollIndicators(.hidden)
+        .frame(maxWidth: .infinity)
+        .frame(height: 44)
+        .noteControlBackground(Capsule())
+        .clipShape(Capsule())
+    }
+
+    private var checklistButton: some View {
+        Button { editor.insertLine("☐ ") } label: {
+            Image(systemName: "checklist").frame(width: 44, height: 44)
+        }
+        .accessibilityLabel("Insert checklist item")
+    }
+
+    private var linkButton: some View {
+        Button {
+            linkDraft = ""
+            isInsertingLink = true
+        } label: {
+            Image(systemName: "paperclip").frame(width: 44, height: 44)
+        }
+        .accessibilityLabel("Insert link")
+    }
+
+    // This editor stores plain text. Drawings cannot be saved with a note.
+    private var drawingSymbol: some View {
+        Image(systemName: "pencil.tip.crop.circle")
+            .foregroundStyle(Color(white: 0.40))
+            .frame(width: 44, height: 44)
+            .accessibilityHidden(true)
+    }
+}
+
+private extension View {
+    func noteControlBackground<S: InsettableShape>(_ shape: S) -> some View {
+        background(Color(white: 0.12), in: shape)
+            .overlay(shape.strokeBorder(
+                LinearGradient(colors: [Color.white.opacity(0.17), Color.white.opacity(0.04)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing),
+                lineWidth: 0.8
+            ))
     }
 }
 
@@ -237,59 +319,29 @@ private final class NoteEditorController: ObservableObject {
     @Published var isEditing = false
     @Published var canUndo = false
 
-    func insertListItem() {
+    func insert(_ value: String) {
         guard let textView else { return }
         textView.becomeFirstResponder()
-        guard let range = textView.selectedTextRange else { return }
+        textView.insertText(value)
+    }
+
+    func insertLine(_ line: String) {
+        guard let textView, let range = textView.selectedTextRange else { return }
         let before = textView.textRange(from: textView.beginningOfDocument, to: range.start)
-        let previousText = before.flatMap { textView.text(in: $0) } ?? ""
-        textView.insertText(previousText.isEmpty || previousText.hasSuffix("\n") ? "• " : "\n• ")
-    }
-}
-
-private struct IncomingGlassCircleModifier: ViewModifier {
-    let tint: Color?
-
-    func body(content: Content) -> some View {
-        content
-            .background(.ultraThinMaterial, in: Circle())
-            .background(
-                Circle()
-                    .fill((tint ?? Color.white).opacity(tint == nil ? 0.035 : 0.22))
-            )
-            .overlay(
-                Circle()
-                    .stroke(Color.white.opacity(0.14), lineWidth: 0.7)
-            )
-            .shadow(color: Color.black.opacity(0.18), radius: 5, y: 2)
-    }
-}
-
-private struct IncomingGlassCapsuleModifier: ViewModifier {
-    let tint: Color?
-
-    func body(content: Content) -> some View {
-        content
-            .background(.ultraThinMaterial, in: Capsule())
-            .background(
-                Capsule()
-                    .fill((tint ?? Color.white).opacity(tint == nil ? 0.035 : 0.22))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(Color.white.opacity(0.14), lineWidth: 0.7)
-            )
-            .shadow(color: Color.black.opacity(0.18), radius: 5, y: 2)
-    }
-}
-
-extension View {
-    func incomingGlassCircle(tint: Color? = nil) -> some View {
-        modifier(IncomingGlassCircleModifier(tint: tint))
+        let precedingText = before.flatMap { textView.text(in: $0) } ?? ""
+        insert(precedingText.isEmpty || precedingText.hasSuffix("\n") ? line : "\n" + line)
     }
 
-    func incomingGlassCapsule(tint: Color? = nil) -> some View {
-        modifier(IncomingGlassCapsuleModifier(tint: tint))
+    func changeCase(uppercase: Bool) {
+        guard let textView else { return }
+        let text = (textView.text ?? "") as NSString
+        let selection = textView.selectedRange
+        guard NSMaxRange(selection) <= text.length else { return }
+        let range = selection.length == 0 ? text.paragraphRange(for: selection) : selection
+        guard range.length > 0 else { return }
+        let original = text.substring(with: range)
+        textView.selectedRange = range
+        insert(uppercase ? original.uppercased() : original.lowercased())
     }
 }
 
@@ -312,6 +364,7 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
         textView.font = .preferredFont(forTextStyle: .body)
         textView.adjustsFontForContentSizeCategory = true
         textView.text = text
+        context.coordinator.styleNote(textView)
         textView.accessibilityLabel = "Note"
         textView.keyboardDismissMode = .interactive
         textView.alwaysBounceVertical = true
@@ -336,6 +389,7 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
         context.coordinator.parent = self
         if textView.markedTextRange == nil && textView.text != text {
             textView.text = text
+            context.coordinator.styleNote(textView)
         }
     }
 
@@ -354,6 +408,25 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
             parent.text = textView.text
             parent.onTextChanged(textView.text)
             parent.editor.canUndo = textView.undoManager?.canUndo ?? false
+            styleNote(textView)
+        }
+
+        func styleNote(_ textView: UITextView) {
+            guard textView.markedTextRange == nil else { return }
+            let text = (textView.text ?? "") as NSString
+            let firstLineBreak = text.rangeOfCharacter(from: .newlines).location
+            let titleLength = min(firstLineBreak, text.length)
+            let title = UIFontMetrics(forTextStyle: .title1).scaledFont(
+                for: .systemFont(ofSize: 28, weight: .bold)
+            )
+            let body = UIFont.preferredFont(forTextStyle: .body)
+            let storage = textView.textStorage
+            storage.beginEditing()
+            storage.addAttribute(.font, value: title, range: NSRange(location: 0, length: titleLength))
+            storage.addAttribute(.font, value: body, range: NSRange(location: titleLength, length: text.length - titleLength))
+            storage.endEditing()
+            textView.typingAttributes = [.font: textView.selectedRange.location <= titleLength ? title : body,
+                                         .foregroundColor: UIColor.white]
         }
 
         @objc func handleTripleTap(_ recognizer: UITapGestureRecognizer) {
