@@ -28,7 +28,8 @@ struct InjectInputView: View {
                         userId = newValue
                         didSave = false
                         saveError = nil
-                    }), prompt: Text("Enter ID"))
+                    }))
+                        .accessibilityLabel("Inject User ID")
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .disabled(isSaving)
