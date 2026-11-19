@@ -42,7 +42,7 @@ final class AppSession: ObservableObject {
         }
     }
 
-    func authenticated<T: Decodable>(_ path: String, method: String = "GET", body: AnyEncodable? = nil) async throws -> T {
+    func authenticated<T: Decodable & Sendable>(_ path: String, method: String = "GET", body: AnyEncodable? = nil) async throws -> T {
         let generation = sessionGeneration
         guard let token = accessToken else { throw signInRequired }
         do {

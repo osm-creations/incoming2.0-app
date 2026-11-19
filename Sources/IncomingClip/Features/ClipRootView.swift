@@ -27,7 +27,7 @@ struct ClipRootView: View {
                 .id(session.id)
 
             case .black(let text, let session):
-                BlackPerformanceView(ready: true) {
+                BlackPerformanceView {
                     coordinator.reveal(text: text, session: session)
                 }
 

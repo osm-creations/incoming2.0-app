@@ -24,18 +24,18 @@ struct InjectInputView: View {
                 Button("Retry") { Task { await load() } }
             } else {
                 Section {
-                    TextField("11z user ID", text: Binding(get: { userId }, set: { newValue in
+                    TextField("Inject User ID", text: Binding(get: { userId }, set: { newValue in
                         userId = newValue
                         didSave = false
                         saveError = nil
-                    }))
+                    }), prompt: Text("Enter ID"))
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .disabled(isSaving)
                 } header: {
-                    Text("Inject")
+                    Text("Inject User ID")
                 } footer: {
-                    Text("Save your 11z user ID to enable Share in App Clip Notes. Long-press Share to preview the latest selection. Clear the ID and save to turn it off.")
+                    Text("Enter your Inject User ID to enable Inject.")
                 }
 
                 if !isValid {
@@ -47,7 +47,7 @@ struct InjectInputView: View {
                 if let saveError {
                     Text(saveError).foregroundStyle(.red)
                 } else if didSave {
-                    Text(savedUserId.isEmpty ? "Inject is off." : "11z user ID saved.")
+                    Text(savedUserId.isEmpty ? "Inject is off." : "Inject User ID saved.")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -84,6 +84,8 @@ struct InjectInputView: View {
             savedUserId = data.config.injectUserId ?? ""
             userId = savedUserId
             didSave = true
+        } catch APIClientError.server(_, "VALIDATION_ERROR", _) {
+            saveError = "Use up to 128 letters, numbers, hyphens or underscores for the Inject User ID."
         } catch {
             saveError = error.localizedDescription
         }

@@ -1,4 +1,4 @@
-name: Verify Incoming reference redesign
+name: Verify Incoming 2.0 build 8 and timed caller selection
 on:
   push:
     branches: ['verify/ios-reference-redesign']
@@ -35,6 +35,7 @@ jobs:
           for product in "$app" "$clip"; do
             /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$product/Info.plist"
             /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$product/Info.plist"
+            test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$product/Info.plist")" = 8
           done
   smoke:
     runs-on: macos-15

@@ -11,6 +11,12 @@ class WorkerFixture(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_POST(self):
+        if self.path == "/api/v1/auth/login":
+            data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            assert data["login"] == "fixture" and data["password"] == "fixture"
+            return self.reply(200, {"accessToken":"fixture-access","refreshToken":"fixture-refresh",
+                                    "expiresIn":3600,"forcePasswordChange":False,
+                                    "user":{"id":"performer","publicUserId":"fixture","email":"fixture@example.invalid","role":"USER","status":"ACTIVE"}})
         if self.path != "/api/v1/app-clip/bootstrap":
             return self.send_error(404)
         data = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -25,6 +31,12 @@ class WorkerFixture(BaseHTTPRequestHandler):
         })
 
     def do_GET(self):
+        if self.path == "/api/v1/clip-configs/primary":
+            assert self.headers["Authorization"] == "Bearer fixture-access"
+            return self.reply(200, {"config":{"id":"primary","publicConfigId":"enabled","name":"Fixture",
+                                              "mode":"DIRECT_NOTES","enabled":1,"openOverflowInitially":0,
+                                              "staticText":"Rose","injectUserId":""},
+                                    "invocationUrl":"http://127.0.0.1:8743/c/fixture/enabled?t=local"})
         if self.path == "/ready":
             return self.reply(200, {})
         if self.path != "/api/v1/app-clip/sessions/rehearsal/selection":

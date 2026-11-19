@@ -16,6 +16,9 @@ targets:
         excludes: [Resources]
       - path: ../../Sources/IncomingClip
         excludes: [App/IncomingClipApp.swift, Info.plist, IncomingClip.entitlements]
+      - path: ../../Sources/Incoming/App/AppSession.swift
+      - path: ../../Sources/Incoming/Services/KeychainStore.swift
+      - path: ../../Sources/Incoming/Features/Performance/InjectInputView.swift
       - path: Host
         excludes: [Info.plist]
     settings:

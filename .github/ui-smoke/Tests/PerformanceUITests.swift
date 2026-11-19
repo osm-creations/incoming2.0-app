@@ -33,13 +33,30 @@ final class PerformanceUITests: XCTestCase {
         alert.buttons[choice].tap()
     }
 
-    private func performCall(expected: String, expectedNote: String = "Rose") {
+    private func performCall(expected: String, expectedNote: String = "Rose", checkDelay: Bool = false) {
         note.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         XCTAssertTrue(note.waitForNonExistence(timeout: 5), app.debugDescription)
         // Wait for the crossfade to finish before revealing from the black screen.
         Thread.sleep(forTimeInterval: 0.4)
         app.tap(withNumberOfTaps: 3, numberOfTouches: 1)
-        XCTAssertTrue(app.staticTexts[expected].waitForExistence(timeout: 6), app.debugDescription)
+        let caller = app.staticTexts[expected]
+        if checkDelay {
+            // Start after the original synthesized input. XCTest includes a short idle wait.
+            let afterFirst = ProcessInfo.processInfo.systemUptime
+            Thread.sleep(forTimeInterval: 2.2)
+            XCTAssertFalse(caller.exists, "Call appeared before the five-second delay")
+            let beforeRepeat = ProcessInfo.processInfo.systemUptime
+            app.tap(withNumberOfTaps: 3, numberOfTouches: 1)
+            let untilEarlySample = (afterFirst + 3.75) - ProcessInfo.processInfo.systemUptime
+            if untilEarlySample > 0 { Thread.sleep(forTimeInterval: untilEarlySample) }
+            XCTAssertFalse(caller.exists, "Call appeared before the timer was due")
+            XCTAssertTrue(caller.waitForExistence(timeout: 3.5), app.debugDescription)
+            let observed = ProcessInfo.processInfo.systemUptime
+            print("Call observed after first input: \(observed-afterFirst)s; after repeated input: \(observed-beforeRepeat)s")
+            XCTAssertLessThan(observed-beforeRepeat, 4.95, "Repeated taps restarted the five-second timer")
+        } else {
+            XCTAssertTrue(caller.waitForExistence(timeout: 12), app.debugDescription)
+        }
         let slider = app.buttons["Answer call"]
         XCTAssertTrue(slider.waitForExistence(timeout: 5))
         capture("Incoming call - " + expected)
@@ -74,6 +91,15 @@ final class PerformanceUITests: XCTestCase {
         XCTAssertEqual(note.value as? String, "Rehearsal")
     }
 
+    func testPerformerInjectLabels() {
+        app.launchEnvironment["FIXTURE_PROFILE"] = "performer"
+        app.launch()
+        let field = app.textFields["Inject User ID"]
+        XCTAssertTrue(field.waitForExistence(timeout: 15), app.debugDescription)
+        XCTAssertTrue(app.staticTexts["Enter your Inject User ID to enable Inject."].exists)
+        capture("Performer Inject settings")
+    }
+
     func testClosePreservesConfiguredName() {
         launch()
         capture("Editable Notes")
@@ -83,9 +109,9 @@ final class PerformanceUITests: XCTestCase {
 
     func testUseSelectsNewName() {
         launch()
-        for _ in 0..<3 {
+        for attempt in 0..<3 {
             preview("Use")
-            performCall(expected: "Taylor Anderson")
+            performCall(expected: "Taylor Anderson", checkDelay: attempt == 0)
         }
     }
 
