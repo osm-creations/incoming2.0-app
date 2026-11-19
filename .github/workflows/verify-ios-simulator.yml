@@ -1,0 +1,84 @@
+name: Verify Incoming reference redesign
+on:
+  push:
+    branches: ['verify/ios-reference-redesign']
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select installed Xcode
+        run: bash .github/ui-smoke/select-xcode.sh
+      - name: Clean simulator build of the app and embedded Clip
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace Incoming2.xcworkspace -scheme Incoming2 -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO \
+            clean build > "$RUNNER_TEMP/simulator.log" 2>&1 || { tail -250 "$RUNNER_TEMP/simulator.log"; exit 1; }
+          tail -5 "$RUNNER_TEMP/simulator.log"
+      - name: Archive Release for iPhone without signing or distribution
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/Incoming.xcarchive"
+          xcodebuild -workspace Incoming2.xcworkspace -scheme Incoming2 -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$archive" \
+            CODE_SIGNING_ALLOWED=NO archive > "$RUNNER_TEMP/archive.log" 2>&1 || { tail -250 "$RUNNER_TEMP/archive.log"; exit 1; }
+          tail -5 "$RUNNER_TEMP/archive.log"
+          app="$archive/Products/Applications/Incoming2.app"
+          clip="$app/AppClips/IncomingClip.app"
+          test -f "$app/Incoming2" && test -f "$clip/IncomingClip"
+          for product in "$app" "$clip"; do
+            /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$product/Info.plist"
+            /usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$product/Info.plist"
+          done
+  smoke:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: .github/ui-smoke
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select installed Xcode
+        run: bash select-xcode.sh
+      - name: Prepare iPhone simulator and test host
+        run: |
+          if ! command -v xcodegen >/dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi
+          xcodegen generate
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool NO
+          device="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin)["devices"]; print(next(x["udid"] for k in sorted((r for r in d if ".iOS-" in r), key=lambda r: list(map(int,r.rsplit(".iOS-",1)[1].split("-"))), reverse=True) for x in d[k] if x["name"].startswith("iPhone") and x["isAvailable"]))')"
+          echo "DEVICE=$device" >> "$GITHUB_ENV"
+          xcrun simctl boot "$device"
+          xcrun simctl bootstatus "$device" -b
+      - name: Exercise Notes, long press, dialog choices, gestures and call slider
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true; cat worker.log' EXIT
+          for i in {1..10}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project ClipSmoke.xcodeproj -scheme ClipHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Smoke.xcresult test 2>&1 | tee test.log
+      - name: Export simulator screenshots
+        if: always()
+        run: |
+          if test -d Smoke.xcresult; then
+            xcrun xcresulttool export attachments --path Smoke.xcresult --output-path captures
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reference-redesign-simulator-ui
+          path: |
+            .github/ui-smoke/captures
+            .github/ui-smoke/test.log
+            .github/ui-smoke/worker.log
+          if-no-files-found: ignore
