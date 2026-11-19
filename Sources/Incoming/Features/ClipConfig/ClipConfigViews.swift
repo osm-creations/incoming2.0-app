@@ -289,7 +289,7 @@ struct NotesInputView: View {
                     onSave: save,
                     onTripleTap: nil,
                     showsSystemShare: hasInjectUserId,
-                    onUseStandardPresentation: usesPlainPresentation ? { usesPlainPresentation = false } : nil
+                    usesPlainPresentation: usesPlainPresentation
                 )
                 .disabled(isSaving)
                 .safeAreaInset(edge: .bottom, spacing: 0) {

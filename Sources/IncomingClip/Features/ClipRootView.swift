@@ -23,8 +23,7 @@ struct ClipRootView: View {
                     onTripleTap: { updatedText in
                         coordinator.enterBlack(text: updatedText, session: session)
                     },
-                    onUseStandardPresentation: coordinator.usesPlainPresentation
-                        ? { coordinator.useStandardPresentation(session: session) } : nil
+                    usesPlainPresentation: coordinator.usesPlainPresentation
                 )
                 .id(session.id)
 

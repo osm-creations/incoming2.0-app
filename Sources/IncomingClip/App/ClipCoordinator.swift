@@ -74,6 +74,9 @@ final class ClipCoordinator: ObservableObject {
             }
             throw error
         }
+        guard case .notes(_, let active) = state, active.id == session.id else {
+            throw CancellationError()
+        }
         let value = response.value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !value.isEmpty else {
             throw APIClientError.server(status: 422, code: "NO_SELECTION", message: "No selection is available yet.")
@@ -84,11 +87,6 @@ final class ClipCoordinator: ObservableObject {
     func useSelection(_ value: String, session: ClipSession) {
         guard case .notes(_, let active) = state, active.id == session.id else { return }
         selectedName = value
-    }
-
-    func useStandardPresentation(session: ClipSession) {
-        guard case .notes(_, let active) = state, active.id == session.id else { return }
-        usesPlainPresentation = false
     }
 
     func enterBlack(text: String, session: ClipSession) {

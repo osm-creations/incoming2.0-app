@@ -17,12 +17,13 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 
 Use a physical iPhone to check vibration and NFC. In the main app, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
 
-## Test both presentations with one account
+## Test account-specific presentations and settings
 
-After deploying the updated Worker, set its `PLAIN_PRESENTATION_ACCOUNT` text variable to the performer's email or the exact **User ID** shown in **Settings → Account**. Open **Notes Input** and confirm the plain editor loads. Type and save a note, then reopen it to check the saved text.
+Use two test accounts. In the server's `wrangler.toml`, `PLAIN_PRESENTATION_ACCOUNT` selects the plain editor and name reveal. It is currently set to public User ID `105`.
 
-Open that account's App Clip link. Triple-tap inside the note, then triple-tap the black screen. After five seconds the caller name appears in black on white. Tap the name screen to return to the edited note.
+1. Sign in as `105`, save a note and caller name, and copy its App Clip link. Repeat with a second performer account, using a different note and caller name. If testing Inject, give each account its own Inject ID and set a distinct selection in each provider account.
+2. Open each link on the same iPhone in turn. Each note and caller name should match the performer who created the link. With Inject enabled, use **Get caller name** in plain Notes or long-press **Share** in standard Notes to check that performer's selection.
+3. Triple-tap the note, triple-tap the black screen, and wait five seconds. The link for `105` shows a black name on white. Tap to return. The other link shows the standard simulated incoming call.
+4. Clear the caller name or Inject ID on one account, save, and reopen both links. The other account should retain its own settings.
 
-In the App Clip note, tap **Use standard presentation** and repeat the gestures to see the standard Notes layout and simulated incoming call. Reopening the link starts a fresh plain session. The main app's Notes Input has the same choice for its own editor.
-
-For App Review, include the demo login, its complete App Clip link, and the steps above in Notes for Review.
+For App Review, provide a test login and complete App Clip link for each presentation. Include the gestures above in Notes for Review so the reviewer can reproduce both flows.

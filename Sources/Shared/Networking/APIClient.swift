@@ -60,6 +60,9 @@ final class APIClient {
         }
 
         var request = URLRequest(url: url)
+        if bearer != nil || clipToken != nil {
+            request.cachePolicy = .reloadIgnoringLocalCacheData
+        }
         request.httpMethod = method
         request.timeoutInterval = 15
         request.setValue("application/json", forHTTPHeaderField: "Accept")

@@ -67,12 +67,10 @@ struct IncomingNotesView: View {
     let onShareLongPress: (() -> Void)?
     let shareIsLoading: Bool
     let showsSystemShare: Bool
-    let onUseStandardPresentation: (() -> Void)?
+    let usesPlainPresentation: Bool
 
     @State private var noteText: String
     @State private var openedAt = Date()
-    @State private var isInsertingLink = false
-    @State private var linkDraft = ""
     @StateObject private var editor = NoteEditorController()
 
     init(
@@ -85,7 +83,7 @@ struct IncomingNotesView: View {
         onShareLongPress: (() -> Void)? = nil,
         shareIsLoading: Bool = false,
         showsSystemShare: Bool = false,
-        onUseStandardPresentation: (() -> Void)? = nil
+        usesPlainPresentation: Bool
     ) {
         self.showsSave = showsSave
         self.onBack = onBack
@@ -95,29 +93,20 @@ struct IncomingNotesView: View {
         self.onShareLongPress = onShareLongPress
         self.shareIsLoading = shareIsLoading
         self.showsSystemShare = showsSystemShare
-        self.onUseStandardPresentation = onUseStandardPresentation
+        self.usesPlainPresentation = usesPlainPresentation
         _noteText = State(initialValue: initialText)
     }
 
     var body: some View {
         Group {
-            if let onUseStandardPresentation {
-                plainNotes(useStandardPresentation: onUseStandardPresentation)
+            if usesPlainPresentation {
+                plainNotes
             } else {
                 standardNotes
             }
         }
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden(false)
-        .alert("Insert Link", isPresented: $isInsertingLink) {
-            TextField("https://example.com", text: $linkDraft)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .keyboardType(.URL)
-            Button("Insert") { editor.insert(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines)) }
-                .disabled(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            Button("Cancel", role: .cancel) {}
-        }
     }
 
     private var standardNotes: some View {
@@ -155,7 +144,7 @@ struct IncomingNotesView: View {
         .background(Color.black.ignoresSafeArea())
     }
 
-    private func plainNotes(useStandardPresentation: @escaping () -> Void) -> some View {
+    private var plainNotes: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 16) {
                 if let onBack { Button("Back", action: onBack) }
@@ -166,10 +155,6 @@ struct IncomingNotesView: View {
                         .disabled(noteText.isEmpty)
                     Button("Insert checklist item") { editor.insertLine("☐ ") }
                     Button("Insert tabbed columns") { editor.insertLine("Column 1\tColumn 2\n") }
-                    Button("Insert link") {
-                        linkDraft = ""
-                        isInsertingLink = true
-                    }
                     Button("Uppercase") { editor.changeCase(uppercase: true) }
                     Button("Lowercase") { editor.changeCase(uppercase: false) }
                     Button("Undo") { editor.textView?.undoManager?.undo() }.disabled(!editor.canUndo)
@@ -200,11 +185,6 @@ struct IncomingNotesView: View {
             } else if showsSystemShare {
                 ShareLink("Share note", item: noteText).disabled(noteText.isEmpty)
             }
-            Button("Use standard presentation") {
-                editor.textView?.resignFirstResponder()
-                useStandardPresentation()
-            }
-            .frame(minHeight: 44)
         }
         .padding(16)
         .tint(IncomingTheme.accent)
@@ -294,7 +274,6 @@ struct IncomingNotesView: View {
         HStack {
             HStack(spacing: 4) {
                 checklistButton
-                linkButton
                 drawingSymbol
             }
             .padding(.horizontal, 4)
@@ -328,7 +307,6 @@ struct IncomingNotesView: View {
                     Image(systemName: "tablecells").frame(width: 56, height: 44)
                 }
                 .accessibilityLabel("Insert tabbed columns")
-                linkButton.frame(width: 54)
                 drawingSymbol.frame(width: 52)
                 Button { editor.textView?.undoManager?.undo() } label: {
                     Image(systemName: "arrow.uturn.backward").frame(width: 48, height: 44)
@@ -350,16 +328,6 @@ struct IncomingNotesView: View {
             Image(systemName: "checklist").frame(width: 44, height: 44)
         }
         .accessibilityLabel("Insert checklist item")
-    }
-
-    private var linkButton: some View {
-        Button {
-            linkDraft = ""
-            isInsertingLink = true
-        } label: {
-            Image(systemName: "paperclip").frame(width: 44, height: 44)
-        }
-        .accessibilityLabel("Insert link")
     }
 
     // This editor stores plain text. Drawings cannot be saved with a note.

@@ -19,10 +19,12 @@ final class AppSession: ObservableObject {
     }
 
     func login(login: String, password: String) async throws {
+        let generation = sessionGeneration
         let data: LoginData = try await APIClient.shared.request(
             "/api/v1/auth/login", method: "POST",
             body: AnyEncodable(LoginRequest(login: login, password: password))
         )
+        guard sessionGeneration == generation else { throw CancellationError() }
         try keychain.save(data.refreshToken, account: "refresh_token")
         sessionGeneration = UUID()
         refreshing?.cancel()
@@ -45,14 +47,17 @@ final class AppSession: ObservableObject {
     func authenticated<T: Decodable & Sendable>(_ path: String, method: String = "GET", body: AnyEncodable? = nil) async throws -> T {
         let generation = sessionGeneration
         guard let token = accessToken else { throw signInRequired }
+        let result: T
         do {
-            return try await APIClient.shared.request(path, method: method, body: body, bearer: token)
+            result = try await APIClient.shared.request(path, method: method, body: body, bearer: token)
         } catch APIClientError.server(let status, _, _) where status == 401 {
             guard sessionGeneration == generation, let current = accessToken else { throw signInRequired }
             let renewed = current == token ? try await refreshAccessToken() : current
             guard sessionGeneration == generation else { throw signInRequired }
-            return try await APIClient.shared.request(path, method: method, body: body, bearer: renewed)
+            result = try await APIClient.shared.request(path, method: method, body: body, bearer: renewed)
         }
+        guard sessionGeneration == generation else { throw CancellationError() }
+        return result
     }
 
     private func refreshAccessToken() async throws -> String {

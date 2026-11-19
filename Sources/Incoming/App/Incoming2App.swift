@@ -7,7 +7,7 @@ struct Incoming2App: App {
         WindowGroup {
             Group {
                 if session.isRestoring { ProgressView().tint(.white).frame(maxWidth: .infinity, maxHeight: .infinity).background(IncomingTheme.background) }
-                else if session.isLoggedIn { DashboardView() }
+                else if session.isLoggedIn { DashboardView().id(session.user?.id) }
                 else { LoginView() }
             }
             .environmentObject(session)
