@@ -33,7 +33,7 @@ final class PerformanceUITests: XCTestCase {
         alert.buttons[choice].tap()
     }
 
-    private func performCall(expected: String) {
+    private func performCall(expected: String, expectedNote: String = "Rose") {
         note.tap(withNumberOfTaps: 3, numberOfTouches: 1)
         XCTAssertTrue(note.waitForNonExistence(timeout: 5), app.debugDescription)
         // Wait for the crossfade to finish before revealing from the black screen.
@@ -47,8 +47,16 @@ final class PerformanceUITests: XCTestCase {
         let end = slider.coordinate(withNormalizedOffset: CGVector(dx: 0.91, dy: 0.50))
         start.press(forDuration: 0.15, thenDragTo: end)
         XCTAssertTrue(note.waitForExistence(timeout: 8), app.debugDescription)
-        XCTAssertEqual(note.value as? String, "Rose")
+        XCTAssertEqual(note.value as? String, expectedNote)
         capture("Restored note - " + expected)
+    }
+
+    func testTripleTapWhileEditingPreservesText() {
+        launch(profile: "empty")
+        note.tap()
+        XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 8))
+        note.typeText("Rehearsal")
+        performCall(expected: "Jamie", expectedNote: "Rehearsal")
     }
 
     func testNotesReadingAndEditing() {
@@ -75,8 +83,10 @@ final class PerformanceUITests: XCTestCase {
 
     func testUseSelectsNewName() {
         launch()
-        preview("Use")
-        performCall(expected: "Taylor Anderson")
+        for _ in 0..<3 {
+            preview("Use")
+            performCall(expected: "Taylor Anderson")
+        }
     }
 
     func testUnconfiguredUserHasNoShareAction() {
