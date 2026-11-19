@@ -96,6 +96,9 @@ final class PerformanceUITests: XCTestCase {
         app.launch()
         let field = app.textFields["Inject User ID"]
         XCTAssertTrue(field.waitForExistence(timeout: 15), app.debugDescription)
+        XCTAssertEqual(field.label, "Inject User ID")
+        XCTAssertEqual(field.placeholderValue, "Inject User ID")
+        XCTAssertTrue(app.staticTexts["Inject User ID"].exists)
         XCTAssertTrue(app.staticTexts["Enter your Inject User ID to enable Inject."].exists)
         capture("Performer Inject settings")
     }
