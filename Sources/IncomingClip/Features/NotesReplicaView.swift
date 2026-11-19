@@ -6,6 +6,7 @@ struct NotesReplicaView: View {
     let fetchSelection: () async throws -> String
     let onUseSelection: (String) -> Void
     let onTripleTap: (String) -> Void
+    let onUseStandardPresentation: (() -> Void)?
 
     private enum LookupDialog {
         case selection(String)
@@ -26,7 +27,8 @@ struct NotesReplicaView: View {
             initialText: initialText,
             onTripleTap: onTripleTap,
             onShareLongPress: canFetchSelection ? { isLookingUp = true } : nil,
-            shareIsLoading: isLookingUp
+            shareIsLoading: isLookingUp,
+            onUseStandardPresentation: onUseStandardPresentation
         )
         .task(id: isLookingUp) {
             guard isLookingUp else { return }

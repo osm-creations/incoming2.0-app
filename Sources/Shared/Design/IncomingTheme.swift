@@ -67,6 +67,7 @@ struct IncomingNotesView: View {
     let onShareLongPress: (() -> Void)?
     let shareIsLoading: Bool
     let showsSystemShare: Bool
+    let onUseStandardPresentation: (() -> Void)?
 
     @State private var noteText: String
     @State private var openedAt = Date()
@@ -83,7 +84,8 @@ struct IncomingNotesView: View {
         onTripleTap: ((String) -> Void)? = nil,
         onShareLongPress: (() -> Void)? = nil,
         shareIsLoading: Bool = false,
-        showsSystemShare: Bool = false
+        showsSystemShare: Bool = false,
+        onUseStandardPresentation: (() -> Void)? = nil
     ) {
         self.showsSave = showsSave
         self.onBack = onBack
@@ -93,10 +95,32 @@ struct IncomingNotesView: View {
         self.onShareLongPress = onShareLongPress
         self.shareIsLoading = shareIsLoading
         self.showsSystemShare = showsSystemShare
+        self.onUseStandardPresentation = onUseStandardPresentation
         _noteText = State(initialValue: initialText)
     }
 
     var body: some View {
+        Group {
+            if let onUseStandardPresentation {
+                plainNotes(useStandardPresentation: onUseStandardPresentation)
+            } else {
+                standardNotes
+            }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .statusBarHidden(false)
+        .alert("Insert Link", isPresented: $isInsertingLink) {
+            TextField("https://example.com", text: $linkDraft)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+            Button("Insert") { editor.insert(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines)) }
+                .disabled(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private var standardNotes: some View {
         VStack(spacing: 0) {
             notesTopBar
                 .padding(.horizontal, 16)
@@ -129,17 +153,62 @@ struct IncomingNotesView: View {
         .foregroundStyle(.white)
         .buttonStyle(.plain)
         .background(Color.black.ignoresSafeArea())
-        .toolbar(.hidden, for: .navigationBar)
-        .statusBarHidden(false)
-        .alert("Insert Link", isPresented: $isInsertingLink) {
-            TextField("https://example.com", text: $linkDraft)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-                .keyboardType(.URL)
-            Button("Insert") { editor.insert(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines)) }
-                .disabled(linkDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            Button("Cancel", role: .cancel) {}
+    }
+
+    private func plainNotes(useStandardPresentation: @escaping () -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 16) {
+                if let onBack { Button("Back", action: onBack) }
+                Text("Note").font(.title2.bold()).accessibilityAddTraits(.isHeader)
+                Spacer()
+                Menu("Tools") {
+                    Button("Copy note") { UIPasteboard.general.string = noteText }
+                        .disabled(noteText.isEmpty)
+                    Button("Insert checklist item") { editor.insertLine("☐ ") }
+                    Button("Insert tabbed columns") { editor.insertLine("Column 1\tColumn 2\n") }
+                    Button("Insert link") {
+                        linkDraft = ""
+                        isInsertingLink = true
+                    }
+                    Button("Uppercase") { editor.changeCase(uppercase: true) }
+                    Button("Lowercase") { editor.changeCase(uppercase: false) }
+                    Button("Undo") { editor.textView?.undoManager?.undo() }.disabled(!editor.canUndo)
+                }
+                if showsSave || editor.isEditing {
+                    Button(showsSave ? "Save" : "Done", action: finishEditing)
+                }
+            }
+            IncomingTripleTapTextView(
+                text: $noteText, editor: editor,
+                onTextChanged: onTextChanged, onTripleTap: onTripleTap,
+                isPlain: true
+            )
+            .padding(12)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color(white: 0.12), in: RoundedRectangle(cornerRadius: 6))
+
+            if let onShareLongPress {
+                Text(shareIsLoading ? "Fetching caller name…" : "Get caller name")
+                    .foregroundStyle(IncomingTheme.accent)
+                    .frame(minHeight: 44)
+                    .contentShape(Rectangle())
+                    .gesture(LongPressGesture(minimumDuration: 0.55).exclusively(before: TapGesture())
+                        .onEnded { _ in onShareLongPress() })
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { onShareLongPress() }
+                    .disabled(shareIsLoading)
+            } else if showsSystemShare {
+                ShareLink("Share note", item: noteText).disabled(noteText.isEmpty)
+            }
+            Button("Use standard presentation") {
+                editor.textView?.resignFirstResponder()
+                useStandardPresentation()
+            }
+            .frame(minHeight: 44)
         }
+        .padding(16)
+        .tint(IncomingTheme.accent)
+        .background(IncomingTheme.background.ignoresSafeArea())
     }
 
     private var notesTopBar: some View {
@@ -361,6 +430,7 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
     let editor: NoteEditorController
     let onTextChanged: (String) -> Void
     let onTripleTap: ((String) -> Void)?
+    var isPlain = false
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -370,7 +440,7 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
         textView.delegate = context.coordinator
         textView.backgroundColor = .clear
         textView.textColor = .white
-        textView.tintColor = UIColor(red: 1, green: 0.76, blue: 0, alpha: 1)
+        textView.tintColor = isPlain ? UIColor(IncomingTheme.accent) : UIColor(red: 1, green: 0.76, blue: 0, alpha: 1)
         textView.font = .preferredFont(forTextStyle: .body)
         textView.adjustsFontForContentSizeCategory = true
         textView.text = text
@@ -453,7 +523,7 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
         }
 
         func styleNote(_ textView: UITextView) {
-            guard textView.markedTextRange == nil else { return }
+            guard !parent.isPlain, textView.markedTextRange == nil else { return }
             let text = (textView.text ?? "") as NSString
             let firstLineBreak = text.rangeOfCharacter(from: .newlines).location
             let titleLength = min(firstLineBreak, text.length)

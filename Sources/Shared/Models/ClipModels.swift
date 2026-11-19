@@ -36,6 +36,7 @@ struct ClipConfigRaw: Decodable {
     let staticText: String?
     let callerName: String?
     let injectUserId: String?
+    let usesPlainPresentation: Bool?
     let openOverflowInitially: Int
 }
 struct ClipConfigDetailData: Decodable { let config: ClipConfigRaw; let options: [ClipOptionAdmin]; let invocationUrl: String }
@@ -72,6 +73,7 @@ struct ClipSession: Codable { let id: String; let token: String; let expiresAt: 
 struct SpectatorConfiguration: Decodable {
     let callerName: String?
     let hasInjectUserId: Bool?
+    let usesPlainPresentation: Bool?
     let name: String
     let mode: ClipMode
     let staticText: String?

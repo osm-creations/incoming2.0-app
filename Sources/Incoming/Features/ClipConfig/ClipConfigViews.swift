@@ -250,6 +250,7 @@ struct NotesInputView: View {
 
     @State private var loaded = false
     @State private var hasInjectUserId = false
+    @State private var usesPlainPresentation = false
     @State private var draftText = ""
     @State private var loadError: String?
     @State private var saveError: String?
@@ -287,7 +288,8 @@ struct NotesInputView: View {
                     onTextChanged: { draftText = $0 },
                     onSave: save,
                     onTripleTap: nil,
-                    showsSystemShare: hasInjectUserId
+                    showsSystemShare: hasInjectUserId,
+                    onUseStandardPresentation: usesPlainPresentation ? { usesPlainPresentation = false } : nil
                 )
                 .disabled(isSaving)
                 .safeAreaInset(edge: .bottom, spacing: 0) {
@@ -335,6 +337,7 @@ struct NotesInputView: View {
             let data: PrimaryClipData = try await session.authenticated("/api/v1/clip-configs/primary")
             draftText = data.config.staticText ?? ""
             hasInjectUserId = !(data.config.injectUserId ?? "").isEmpty
+            usesPlainPresentation = data.config.usesPlainPresentation == true
             loaded = true
         } catch {
             loadError = error.localizedDescription

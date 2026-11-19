@@ -22,7 +22,9 @@ struct ClipRootView: View {
                     onUseSelection: { coordinator.useSelection($0, session: session) },
                     onTripleTap: { updatedText in
                         coordinator.enterBlack(text: updatedText, session: session)
-                    }
+                    },
+                    onUseStandardPresentation: coordinator.usesPlainPresentation
+                        ? { coordinator.useStandardPresentation(session: session) } : nil
                 )
                 .id(session.id)
 
@@ -32,8 +34,15 @@ struct ClipRootView: View {
                 }
 
             case .call(let text, let session):
-                SimulatedCallView(caller: coordinator.callerName(from: text)) {
-                    coordinator.finishCall(text: text, session: session)
+                let caller = coordinator.callerName(from: text)
+                if coordinator.usesPlainPresentation {
+                    PlainNameReveal(caller: caller) {
+                        coordinator.finishCall(text: text, session: session)
+                    }
+                } else {
+                    SimulatedCallView(caller: caller) {
+                        coordinator.finishCall(text: text, session: session)
+                    }
                 }
 
             case .expired:
@@ -59,6 +68,41 @@ struct ClipRootView: View {
         case .expired: return "expired"
         case .error: return "error"
         }
+    }
+}
+
+@MainActor
+private struct PlainNameReveal: View {
+    let caller: String
+    let onEnd: () -> Void
+
+    @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var effects = CallEffectsController()
+
+    var body: some View {
+        Button {
+            effects.stop()
+            onEnd()
+        } label: {
+            Text(verbatim: caller)
+                .font(.largeTitle.weight(.semibold))
+                .foregroundStyle(.black)
+                .multilineTextAlignment(.center)
+                .minimumScaleFactor(0.5)
+                .padding(24)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(Color.white)
+        .ignoresSafeArea()
+        .accessibilityHint("Returns to the note")
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active { effects.start() } else { effects.stop() }
+        }
+        .onDisappear { effects.stop() }
     }
 }
 

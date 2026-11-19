@@ -15,6 +15,7 @@ final class ClipCoordinator: ObservableObject {
 
     @Published private(set) var state: State = .awaitingInvocation
     @Published private(set) var hasInjectUserId = false
+    @Published private(set) var usesPlainPresentation = false
     private var configuredName: String?
     private var selectedName: String?
     private var usesLegacyNoteName = false
@@ -27,6 +28,7 @@ final class ClipCoordinator: ObservableObject {
         selectedName = nil
         usesLegacyNoteName = false
         hasInjectUserId = false
+        usesPlainPresentation = false
         guard let invocation = ClipInvocation(url: url) else {
             state = .error("This Incoming experience link is invalid.")
             return
@@ -46,6 +48,7 @@ final class ClipCoordinator: ObservableObject {
             guard currentInvocation == requestId else { return }
             configuredName = data.configuration.callerName
             hasInjectUserId = data.configuration.hasInjectUserId == true
+            usesPlainPresentation = data.configuration.usesPlainPresentation == true
             usesLegacyNoteName = data.configuration.hasInjectUserId == nil
             state = .notes(text: data.configuration.staticText ?? "", session: data.session)
         } catch APIClientError.server(let status, let code, _) where status == 401 || code == "SESSION_EXPIRED" {
@@ -81,6 +84,11 @@ final class ClipCoordinator: ObservableObject {
     func useSelection(_ value: String, session: ClipSession) {
         guard case .notes(_, let active) = state, active.id == session.id else { return }
         selectedName = value
+    }
+
+    func useStandardPresentation(session: ClipSession) {
+        guard case .notes(_, let active) = state, active.id == session.id else { return }
+        usesPlainPresentation = false
     }
 
     func enterBlack(text: String, session: ClipSession) {
