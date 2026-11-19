@@ -1,0 +1,22 @@
+name: Verify iOS simulator build
+on:
+  push:
+    branches:
+      - 'verify/ios-720e394-simulator'
+permissions:
+  contents: read
+jobs:
+  compile:
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Build app and embedded App Clip
+        run: |
+          xcodebuild -version
+          xcodebuild -workspace Incoming2.xcworkspace \
+            -scheme Incoming2 -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build
