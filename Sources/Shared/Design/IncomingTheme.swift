@@ -232,7 +232,7 @@ struct IncomingNotesView: View {
             .noteControlBackground(Capsule())
 
             Spacer()
-            Button { editor.textView?.becomeFirstResponder() } label: {
+            Button { editor.beginEditing() } label: {
                 Image(systemName: "square.and.pencil")
                     .frame(width: 44, height: 44)
                     .noteControlBackground(Circle())
@@ -319,9 +319,19 @@ private final class NoteEditorController: ObservableObject {
     @Published var isEditing = false
     @Published var canUndo = false
 
+    // Spectator mode opens the keyboard only after a single tap has been
+    // distinguished from the performance gesture.
+    private(set) var isActivatingEditor = false
+
+    func beginEditing() {
+        isActivatingEditor = true
+        defer { isActivatingEditor = false }
+        textView?.becomeFirstResponder()
+    }
+
     func insert(_ value: String) {
         guard let textView else { return }
-        textView.becomeFirstResponder()
+        beginEditing()
         textView.insertText(value)
     }
 
@@ -372,15 +382,20 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
         textView.textContainer.lineFragmentPadding = 0
 
         if onTripleTap != nil {
-            let tripleTap = UITapGestureRecognizer(target: context.coordinator,
-                                                  action: #selector(Coordinator.handleTripleTap(_:)))
-            tripleTap.numberOfTapsRequired = 3
-            textView.addGestureRecognizer(tripleTap)
-            for case let tap as UITapGestureRecognizer in textView.gestureRecognizers ?? [] {
-                if tap !== tripleTap && tap.numberOfTapsRequired >= 2 {
-                    tap.require(toFail: tripleTap)
-                }
-            }
+            let triple = NoteTapRecognizer(target: context.coordinator,
+                                           action: #selector(Coordinator.handleTripleTap(_:)))
+            triple.numberOfTapsRequired = 3
+            triple.delaysTouchesBegan = true
+            triple.delegate = context.coordinator
+            textView.addGestureRecognizer(triple)
+
+            let single = NoteTapRecognizer(target: context.coordinator,
+                                           action: #selector(Coordinator.handleReadingTap(_:)))
+            single.require(toFail: triple)
+            single.delegate = context.coordinator
+            textView.addGestureRecognizer(single)
+            context.coordinator.readingTap = single
+            context.coordinator.performanceTap = triple
         }
         return textView
     }
@@ -394,11 +409,37 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
     }
 
     @MainActor
-    final class Coordinator: NSObject, UITextViewDelegate {
+    final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
         var parent: IncomingTripleTapTextView
+        weak var readingTap: UITapGestureRecognizer?
+        weak var performanceTap: UITapGestureRecognizer?
 
         init(_ parent: IncomingTripleTapTextView) {
             self.parent = parent
+        }
+
+        func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
+            parent.onTripleTap == nil || parent.editor.isActivatingEditor || UIAccessibility.isVoiceOverRunning
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+            if gestureRecognizer === readingTap { return parent.editor.textView?.isFirstResponder == false }
+            return true
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+            // Query at gesture time because UIKit can add text-selection
+            // recognizers after the text view is created or starts editing.
+            gestureRecognizer === performanceTap && otherGestureRecognizer is UITapGestureRecognizer
+        }
+
+        @objc func handleReadingTap(_ recognizer: UITapGestureRecognizer) {
+            guard recognizer.state == .ended, let textView = recognizer.view as? UITextView else { return }
+            parent.editor.beginEditing()
+            if let point = textView.closestPosition(to: recognizer.location(in: textView)) {
+                textView.selectedTextRange = textView.textRange(from: point, to: point)
+            }
         }
 
         func textViewDidBeginEditing(_ textView: UITextView) { parent.editor.isEditing = true }
@@ -434,5 +475,13 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
             textView.resignFirstResponder()
             parent.onTripleTap?(textView.text)
         }
+    }
+}
+
+// A native selection recognizer may recognize an earlier contact in the same
+// tap sequence. Keep observing so it cannot cancel the spectator gesture.
+private final class NoteTapRecognizer: UITapGestureRecognizer {
+    override func canBePrevented(by preventingGestureRecognizer: UIGestureRecognizer) -> Bool {
+        false
     }
 }
