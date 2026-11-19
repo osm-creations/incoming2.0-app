@@ -6,13 +6,13 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 
 | Check | Expected result |
 |---|---|
-| Open with a blank Inject ID | Notes shows Rose and the Share button is hidden. |
-| Edit the note and perform the two triple-taps | The call shows the saved caller Alex. Sliding to answer returns to the edited note after Call Failed. |
-| Save your 11z user ID under Inject Input, update the selection in 11z, and relaunch the Clip | Share is visible. Long-pressing it previews the current selection. |
+| Open with a blank Inject User ID | Notes shows Rose and the Share button is hidden. |
+| Edit the note and perform the two triple-taps | The screen stays black for five seconds after the second triple-tap, then the call shows the saved caller Alex. Sliding to answer returns to the edited note after Call Failed. |
+| Save your Inject User ID under Inject Input, update the Inject selection, and relaunch the Clip | Share is visible. Long-pressing it previews the current selection. |
 | Choose Close, then perform | The caller is still Alex. |
 | Long-press Share, choose Use, and perform | The call shows the accepted selection. The note keeps its own text. |
 | Start a fresh Clip session | The saved performer caller name applies again. |
-| Clear the 11z ID, save, and open a fresh session | Share is hidden. |
+| Clear the Inject User ID, save, and open a fresh session | Share is hidden. |
 | Reset the test performer's password under Users in the admin site | The old password stops working. The performer can sign in with the new password. |
 
 Use a physical iPhone to check vibration and NFC. In the main app, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
