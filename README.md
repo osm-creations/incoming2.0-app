@@ -4,10 +4,10 @@ Open `Incoming2.xcworkspace` in Xcode. The shared schemes are `Incoming2` for th
 
 ## Set up a performance
 
-1. Sign in with the user ID or email and password supplied by the administrator.
+1. Sign in with your user ID or email and password. Your welcome email contains your user ID, a temporary password and a 7-day setup link. For a new one-hour reset link, choose **Forgot password?** on the login screen and enter your account email.
 2. Open **Settings → App Clip Settings**. Enter the force word or note, the caller name, and a reveal delay from 0 to 60 seconds. New accounts start at 5 seconds. Tap **Set & Save**. **Notes Input** on the dashboard lets you change the saved caller name independently.
 3. To use a live selection, open **Settings**, enter your **Inject User ID** and tap **Save**. Clear the ID and save to turn off Inject for the next App Clip session.
-4. Return to **App Clip Settings** and choose **Copy Link** or **Write NFC Tag**. Use the signed link for this performer.
+4. Return to **App Clip Settings** and choose **Copy Link** or **Write NFC Tag**. New tags use a compact link for this performer. On an updated App Clip you can also open tags written by older versions.
 
 ## Perform
 

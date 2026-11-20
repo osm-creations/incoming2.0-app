@@ -50,9 +50,10 @@ struct LoginView: View {
                         .disabled(busy || login.isEmpty || password.isEmpty)
                 }
             }
-            Text("Forgot your password? Ask your administrator to reset it.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+            Link("Forgot password?", destination: APIClient.shared.passwordResetURL)
+                .font(.callout)
+                .frame(minHeight: 44)
+                .accessibilityIdentifier("login.forgotPassword")
         }
     }
 

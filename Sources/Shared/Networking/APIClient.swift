@@ -48,6 +48,10 @@ final class APIClient {
         return url
     }
 
+    var passwordResetURL: URL {
+        baseURL.appendingPathComponent("forgot-password")
+    }
+
     func request<T: Decodable>(
         _ path: String,
         method: String = "GET",

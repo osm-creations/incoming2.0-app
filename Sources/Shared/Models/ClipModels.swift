@@ -65,6 +65,9 @@ struct ClipOptionCreateRequest: Encodable { let value: String; let displayOrder:
 struct PrimaryClipData: Decodable {
     let config: ClipConfigRaw
     let invocationUrl: String
+    let shortInvocationUrl: String?
+
+    var linkToShare: String { shortInvocationUrl ?? invocationUrl }
 }
 
 struct PrimaryClipUpdateRequest: Encodable {
@@ -78,7 +81,6 @@ struct InjectSelectionData: Decodable {
     let value: String
 }
 
-struct ClipBootstrapRequest: Encodable { let publicUserId: String; let publicConfigId: String; let capability: String }
 struct ClipBootstrapData: Decodable { let session: ClipSession; let configuration: SpectatorConfiguration }
 struct ClipSession: Codable { let id: String; let token: String; let expiresAt: String }
 struct SpectatorConfiguration: Decodable {

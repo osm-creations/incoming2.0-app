@@ -160,7 +160,7 @@ struct PrimaryClipSettingsView: View {
                                     .font(.headline)
 
                                 Button {
-                                    UIPasteboard.general.string = data.invocationUrl
+                                    UIPasteboard.general.string = data.linkToShare
                                     copied = true
                                     Task { @MainActor in
                                         try? await Task.sleep(for: .seconds(1.2))
@@ -173,7 +173,7 @@ struct PrimaryClipSettingsView: View {
                                 .buttonStyle(IncomingButtonStyle(prominent: false))
 
                                 Button {
-                                    if let url = URL(string: data.invocationUrl) {
+                                    if let url = URL(string: data.linkToShare) {
                                         nfc.write(url: url)
                                     }
                                 } label: {
@@ -182,7 +182,7 @@ struct PrimaryClipSettingsView: View {
                                 }
                                 .buttonStyle(IncomingButtonStyle(prominent: false))
 
-                                Text(data.invocationUrl)
+                                Text(data.linkToShare)
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                                     .textSelection(.enabled)

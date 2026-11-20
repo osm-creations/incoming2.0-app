@@ -32,6 +32,18 @@ final class NFCWriterService: NSObject, ObservableObject, NFCTagReaderSessionDel
         reader.begin()
     }
 
+    static func linkMessage(for url: URL) -> NFCNDEFMessage? {
+        let value = url.absoluteString
+        if value.hasPrefix("https://") {
+            // NFC Forum URI prefix 0x04 represents https:// in one byte.
+            let payload = Data([0x04]) + Data(value.dropFirst("https://".count).utf8)
+            let record = NFCNDEFPayload(format: .nfcWellKnown, type: Data([0x55]), identifier: Data(), payload: payload)
+            return NFCNDEFMessage(records: [record])
+        }
+        guard let record = NFCNDEFPayload.wellKnownTypeURIPayload(url: url) else { return nil }
+        return NFCNDEFMessage(records: [record])
+    }
+
     nonisolated func tagReaderSessionDidBecomeActive(_ session: NFCTagReaderSession) {}
 
     nonisolated func tagReaderSession(
@@ -70,12 +82,11 @@ final class NFCWriterService: NSObject, ObservableObject, NFCTagReaderSessionDel
         Task { @MainActor [weak self] in
             guard let service = self,
                   let url = service.urlToWrite,
-                  let payload = NFCNDEFPayload.wellKnownTypeURIPayload(url: url) else {
+                  let ndefMessage = Self.linkMessage(for: url) else {
                 session.invalidate(errorMessage: "Could not create the NFC payload.")
                 return
             }
 
-            let ndefMessage = NFCNDEFMessage(records: [payload])
             service.connectAndWrite(
                 session: session,
                 tag: tag,
@@ -105,7 +116,7 @@ final class NFCWriterService: NSObject, ObservableObject, NFCTagReaderSessionDel
                 return
             }
 
-            ndefTag.queryNDEFStatus { status, _, error in
+            ndefTag.queryNDEFStatus { status, capacity, error in
                 if let error {
                     session.invalidate(errorMessage: error.localizedDescription)
                     return
@@ -120,6 +131,12 @@ final class NFCWriterService: NSObject, ObservableObject, NFCTagReaderSessionDel
                     default:
                         session.invalidate(errorMessage: "This NFC tag is not writable.")
                     }
+                    return
+                }
+
+                let requiredBytes = messageToWrite.length
+                guard requiredBytes <= capacity else {
+                    session.invalidate(errorMessage: "This link needs \(requiredBytes) NDEF bytes. This tag supports \(capacity) bytes.")
                     return
                 }
 

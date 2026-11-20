@@ -43,11 +43,7 @@ final class ClipCoordinator: ObservableObject {
             let data: ClipBootstrapData = try await APIClient.shared.request(
                 "/api/v1/app-clip/bootstrap",
                 method: "POST",
-                body: AnyEncodable(ClipBootstrapRequest(
-                    publicUserId: invocation.publicUserId,
-                    publicConfigId: invocation.publicConfigId,
-                    capability: invocation.capability
-                ))
+                body: AnyEncodable(invocation)
             )
             guard currentInvocation == requestId else { return }
             revealDelaySeconds = RevealDelay.seconds(data.configuration.revealDelaySeconds)
