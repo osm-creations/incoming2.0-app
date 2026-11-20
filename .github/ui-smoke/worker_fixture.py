@@ -1,0 +1,70 @@
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import json
+from secrets import token_hex
+from collections import Counter
+
+sessions = {}
+counts = Counter()
+
+class Fixture(BaseHTTPRequestHandler):
+    def reply(self, payload, status=200):
+        body = json.dumps({"data": payload}).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def read_body(self):
+        return json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+
+    def profile_for(self, action):
+        parts = self.path.split("/")
+        if len(parts) != 7 or parts[1:5] != ["api","v1","app-clip","sessions"] or parts[-1] != action:
+            self.send_error(404)
+            return
+        stored = sessions.get(parts[-2])
+        if not stored or self.headers.get("Authorization") != "Clip " + stored[1]:
+            self.send_error(401)
+            return
+        return stored[0]
+
+    def do_POST(self):
+        if self.path != "/api/v1/app-clip/bootstrap":
+            return self.send_error(404)
+        data = self.read_body()
+        assert data["publicUserId"] == "fixture" and data["capability"] == "local"
+        profile = data["publicConfigId"]
+        assert profile in {"plain-0", "standard-default", "standard-60"}
+        session, token = token_hex(8), token_hex(12)
+        sessions[session] = (profile, token)
+        counts["boot-" + profile] += 1
+        self.reply({
+            "configuration":{"callerName":"jamie rose","hasInjectUserId":True,
+                             "usesPlainPresentation":profile.startswith("plain"),"name":"Fixture",
+                             **({"revealDelaySeconds":int(profile.split("-")[1])} if not profile.endswith("default") else {}),
+                             "mode":"DIRECT_NOTES","staticText":"Rose",
+                             "openOverflowInitially":False,"options":[]},
+            "session":{"id":session,"token":token,"expiresAt":"2099-01-01T00:00:00Z"}
+        })
+
+    def do_GET(self):
+        if self.path == "/ready":
+            return self.reply({})
+        if self.path == "/verified":
+            print("FIXTURE-COUNTS", dict(counts), flush=True)
+            return self.reply(dict(counts))
+        profile = self.profile_for("selection")
+        if not profile: return
+        counts["selection-" + profile] += 1
+        self.reply({"value":"taylor anderson"})
+
+    def do_PATCH(self):
+        profile = self.profile_for("status")
+        if not profile: return
+        data=self.read_body()
+        assert data["status"] == "BLACK_WAITING"
+        counts["black-" + profile] += 1
+        self.reply({"status":data["status"]})
+
+HTTPServer(("127.0.0.1",8743),Fixture).serve_forever()
