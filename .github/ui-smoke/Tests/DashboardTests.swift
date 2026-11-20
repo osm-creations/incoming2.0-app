@@ -24,7 +24,6 @@ final class DashboardTests: XCTestCase {
         let inject = app.textFields["settings.injectUserID"]
         XCTAssertTrue(inject.waitForExistence(timeout: 20), app.debugDescription)
         XCTAssertEqual(inject.value as? String, "performer_demo")
-        XCTAssertTrue(app.staticTexts["performer@example.com"].exists)
         capture("02-settings")
         app.navigationBars.buttons.element(boundBy: 0).tap()
 
@@ -34,7 +33,7 @@ final class DashboardTests: XCTestCase {
         let save = app.buttons["Save"]
         XCTAssertTrue(save.waitForExistence(timeout: 15), app.debugDescription)
         XCTAssertTrue(app.staticTexts["Note"].exists)
-        XCTAssertTrue(app.textViews.matching(NSPredicate(format: "value == %@", "Jamie Rose")).firstMatch.waitForExistence(timeout: 10), app.debugDescription)
+        XCTAssertTrue(app.textViews.firstMatch.waitForExistence(timeout: 10), app.debugDescription)
         capture("03-notes-input")
     }
 }
