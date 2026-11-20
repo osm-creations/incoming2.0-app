@@ -37,7 +37,7 @@ struct ClipRootView: View {
                 }
 
             case .call(let text, let session):
-                let caller = coordinator.callerName(from: text)
+                let caller = coordinator.callerName(from: text).callerDisplayName
                 if coordinator.usesPlainPresentation {
                     PlainNameReveal(caller: caller) {
                         coordinator.finishCall(text: text, session: session)

@@ -171,24 +171,22 @@ private enum CallGlass {
 }
 
 private struct CallBackdrop: View {
-    // Two vertical color fields preserve the warm red bloom on the left
-    // and the softer, olive-brown falloff on the right.
-    private func stop(_ red: Double, _ green: Double, _ blue: Double, at position: CGFloat) -> Gradient.Stop {
-        Gradient.Stop(color: Color(red: red / 255, green: green / 255, blue: blue / 255), location: position)
+    private func stop(_ shade: Double, at position: CGFloat) -> Gradient.Stop {
+        Gradient.Stop(color: Color(white: shade / 255), location: position)
     }
 
     var body: some View {
         ZStack {
             LinearGradient(stops: [
-                stop(112, 107, 92, at: 0), stop(99, 82, 55, at: 0.30),
-                stop(107, 57, 46, at: 0.48), stop(134, 40, 47, at: 0.70),
-                stop(133, 45, 49, at: 0.77), stop(115, 69, 57, at: 0.92), stop(109, 79, 61, at: 1)
+                stop(107, at: 0), stop(84, at: 0.30),
+                stop(67, at: 0.48), stop(60, at: 0.70),
+                stop(64, at: 0.77), stop(78, at: 0.92), stop(84, at: 1)
             ], startPoint: .top, endPoint: .bottom)
 
             LinearGradient(stops: [
-                stop(102, 100, 91, at: 0), stop(88, 81, 65, at: 0.30),
-                stop(101, 90, 82, at: 0.48), stop(95, 74, 65, at: 0.70),
-                stop(93, 71, 60, at: 0.77), stop(96, 79, 61, at: 0.92), stop(98, 83, 64, at: 1)
+                stop(100, at: 0), stop(81, at: 0.30),
+                stop(92, at: 0.48), stop(78, at: 0.70),
+                stop(75, at: 0.77), stop(81, at: 0.92), stop(85, at: 1)
             ], startPoint: .top, endPoint: .bottom)
             .mask(LinearGradient(stops: [.init(color: .clear, location: 0.20),
                                          .init(color: .white, location: 0.90)],

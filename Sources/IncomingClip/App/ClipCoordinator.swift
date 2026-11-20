@@ -133,6 +133,23 @@ final class ClipCoordinator: ObservableObject {
     }
 }
 
+extension String {
+    /// Uppercase word initials while preserving intentional casing such as McDonald or AJ.
+    var callerDisplayName: String {
+        var name = ""
+        var atWordStart = true
+        for character in self {
+            if atWordStart && character.isLetter {
+                name += character.uppercased()
+            } else {
+                name.append(character)
+            }
+            atWordStart = !character.isLetter && !character.isNumber
+        }
+        return name
+    }
+}
+
 private struct StatusData: Decodable {
     let status: String
 }

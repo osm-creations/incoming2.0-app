@@ -15,7 +15,8 @@ struct NotesReplicaView: View {
 
         var message: String {
             switch self {
-            case .selection(let name), .failure(let name): return name
+            case .selection(let name): return name.callerDisplayName
+            case .failure(let message): return message
             }
         }
     }
