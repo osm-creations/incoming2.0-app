@@ -76,7 +76,9 @@ final class PerformanceUITests: XCTestCase {
         dismissKeyboardWelcome()
         inspect(["done", "formatting", "checklist", "table", "attachment"], aboveKeyboard: true)
         XCTAssertLessThan(button("more").frame.maxX, button("done").frame.minX)
-        let keyboardGap = keyboard.frame.minY - button("formatting").frame.maxY
+        let predictions = app.otherElements["Typing Predictions"].firstMatch
+        let keyboardTop = predictions.exists ? min(keyboard.frame.minY, predictions.frame.minY) : keyboard.frame.minY
+        let keyboardGap = keyboardTop - button("formatting").frame.maxY
         print("NOTE-LAYOUT", "keyboard gap", keyboardGap)
         XCTAssertEqual(keyboardGap, 10, accuracy: 2)
         capture("02-Editing")
