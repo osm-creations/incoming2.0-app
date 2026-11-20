@@ -12,17 +12,11 @@ struct DashboardView: View {
                 ScrollView {
                     VStack(spacing: 20) {
                         VStack(spacing: 8) {
-                            Image(systemName: "phone.down.fill")
-                                .font(.system(size: 48))
-                                .frame(width: 92, height: 92)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 27)
-                                        .fill(.blue.gradient)
-                                )
-                                .shadow(color: .blue.opacity(0.4), radius: 24)
+                            IncomingLogo(size: 92)
 
                             Text("Incoming")
                                 .font(.system(size: 36, weight: .medium))
+                                .accessibilityAddTraits(.isHeader)
 
                             Text("By OSM Creations")
                                 .foregroundStyle(.secondary)
@@ -35,13 +29,6 @@ struct DashboardView: View {
                         } label: {
                             DashboardTile(icon: "doc.text.fill", title: "NOTES INPUT")
                         }
-
-                        NavigationLink {
-                            InjectInputView()
-                        } label: {
-                            DashboardTile(icon: "syringe.fill", title: "INJECT INPUT")
-                        }
-                        .buttonStyle(.plain)
 
                         HStack(spacing: 14) {
                             Button {

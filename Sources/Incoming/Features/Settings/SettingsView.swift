@@ -16,6 +16,14 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                InjectInputView()
+            } header: {
+                Text("Inject User ID")
+            } footer: {
+                Text("Clear the ID and save to turn off Inject.")
+            }
+
             Section("Instructions") {
                 NavigationLink("Performer Guide") {
                     PerformerGuideView()
@@ -43,7 +51,7 @@ private struct PerformerGuideView: View {
                 Text("In App Clip Settings, tap Copy Link or Write NFC Tag. Opening that link on the spectator’s iPhone starts the performance.")
             }
             Section("Use Inject") {
-                Text("Open Inject Input on the dashboard, enter your Inject User ID, and tap Save before starting the App Clip. To turn this off, clear the ID and save.")
+                Text("In Settings, enter your Inject User ID and tap Save before starting the App Clip. To turn this off, clear the ID and save.")
                 Text("In App Clip Notes, long-press Share to preview the latest selection. Tap Use to make it the caller name for this performance, or Close to keep the current name.")
             }
             Section("Reveal the call") {

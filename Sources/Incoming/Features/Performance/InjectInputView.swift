@@ -16,34 +16,29 @@ struct InjectInputView: View {
     }
 
     var body: some View {
-        Form {
+        VStack(alignment: .leading, spacing: 10) {
             if isLoading {
                 ProgressView("Loading Inject settings…")
             } else if let loadError {
                 Text(loadError)
                 Button("Retry") { Task { await load() } }
             } else {
-                Section {
-                    TextField("Inject User ID", text: Binding(get: { userId }, set: { newValue in
-                        userId = newValue
-                        didSave = false
-                        saveError = nil
-                    }))
-                        .accessibilityLabel("Inject User ID")
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .disabled(isSaving)
-                } header: {
-                    Text("Inject User ID")
-                } footer: {
-                    Text("Enter your Inject User ID to enable Inject.")
-                }
-
+                TextField("Inject User ID", text: Binding(get: { userId }, set: { newValue in
+                    userId = newValue
+                    didSave = false
+                    saveError = nil
+                }))
+                    .accessibilityLabel("Inject User ID")
+                    .accessibilityIdentifier("settings.injectUserID")
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .disabled(isSaving)
                 if !isValid {
                     Text("Use up to 128 letters, numbers, hyphens or underscores.")
                         .foregroundStyle(.red)
                 }
                 Button(isSaving ? "Saving…" : "Save") { Task { await save() } }
+                    .accessibilityIdentifier("settings.saveInjectUserID")
                     .disabled(isSaving || !isValid || trimmedId == savedUserId)
                 if let saveError {
                     Text(saveError).foregroundStyle(.red)
@@ -53,8 +48,8 @@ struct InjectInputView: View {
                 }
             }
         }
-        .navigationTitle("Inject Input")
-        .task { await load() }
+        .buttonStyle(.borderless)
+        .task { if isLoading { await load() } }
     }
 
     private func load() async {

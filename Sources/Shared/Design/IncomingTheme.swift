@@ -10,6 +10,20 @@ enum IncomingTheme {
     static let notesYellow = Color(red: 1.0, green: 0.76, blue: 0.0)
 }
 
+struct IncomingLogo: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image(decorative: "IncomingLogo")
+            .renderingMode(.original)
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+            .accessibilityHidden(true)
+    }
+}
+
 struct IncomingCard<Content: View>: View {
     let content: Content
 

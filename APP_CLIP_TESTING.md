@@ -8,7 +8,7 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 |---|---|
 | Open with a blank Inject User ID | Standard Notes shows Rose and a dim Share icon. Long-pressing Share leaves the note open. |
 | Edit the note and perform the two triple-taps | The screen stays black for five seconds after the second triple-tap, then the call shows the saved caller Alex. Sliding to answer returns to the edited note after Call Failed. |
-| Save your Inject User ID under Inject Input, update the Inject selection, and relaunch the Clip | Share is visible. Long-pressing it previews the current selection. |
+| Save your Inject User ID in Settings, update the Inject selection, and relaunch the Clip | Share is visible. Long-pressing it previews the current selection. |
 | Choose Close, then perform | The caller is still Alex. |
 | Long-press Share, choose Use, and perform | The call shows the accepted selection. The note keeps its own text. |
 | Start a fresh Clip session | The saved performer caller name applies again. |
