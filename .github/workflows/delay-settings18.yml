@@ -1,0 +1,62 @@
+name: Verify saved App Clip delay on iPhone
+on:
+  push:
+    branches: ['verify/build18-delay-settings']
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: .github/ui-smoke
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start iPhone simulator
+        run: |
+          bash select-xcode.sh
+          python3 choose-simulator.py standard
+          device="$(tail -2 "$GITHUB_ENV" | sed -n 's/^DEVICE=//p')"
+          xcrun simctl boot "$device"
+      - name: Build test host against shipping sources
+        run: |
+          if ! command -v xcodegen >/dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi
+          xcodegen generate
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiBars 3 --cellularBars 4 --batteryState discharging --batteryLevel 100
+      - name: Test delay settings in the app
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true' EXIT
+          for i in {1..12}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project DashboardSmoke.xcodeproj -scheme IncomingHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Dashboard.xcresult test > test.log 2>&1 || { tail -100 test.log; exit 1; }
+          python3 - <<'PY'
+          import json
+          data = json.load(open('roundtrip.json'))
+          assert data['patches'] == [0, 60, 5], data
+          reads = [v for i, v in enumerate(data['gets']) if i == 0 or v != data['gets'][i-1]]
+          assert reads == [None, 0, 60, 5], data
+          print('Verified legacy fallback, 0, 60 and 5 with full GET/PATCH UI roundtrip.')
+          PY
+      - name: Export diagnostics
+        if: always()
+        run: |
+          if test -d Dashboard.xcresult; then xcrun xcresulttool export attachments --path Dashboard.xcresult --output-path captures; fi
+          echo "$SIM_MODEL" > device.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: delay-settings-results
+          path: |
+            .github/ui-smoke/captures
+            .github/ui-smoke/device.txt
+            .github/ui-smoke/test.log
+            .github/ui-smoke/worker.log
+            .github/ui-smoke/roundtrip.json
