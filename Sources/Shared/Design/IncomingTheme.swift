@@ -99,14 +99,16 @@ struct IncomingNotesView: View {
             if usesPlainPresentation {
                 plainNotes
             } else {
-                standardNotes
+                GeometryReader { geometry in
+                    standardNotes(bottomSafeInset: geometry.safeAreaInsets.bottom)
+                }
             }
         }
         .toolbar(.hidden, for: .navigationBar)
         .statusBarHidden(false)
     }
 
-    private var standardNotes: some View {
+    private func standardNotes(bottomSafeInset: CGFloat) -> some View {
         VStack(spacing: 0) {
             notesTopBar
                 .padding(.horizontal, 20)
@@ -131,6 +133,7 @@ struct IncomingNotesView: View {
             } else {
                 idleTools
                     .padding(.horizontal, 28)
+                    .padding(.bottom, max(0, 28 - bottomSafeInset))
             }
         }
         .tint(IncomingTheme.notesYellow)
