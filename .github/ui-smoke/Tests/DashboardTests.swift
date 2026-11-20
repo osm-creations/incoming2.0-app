@@ -19,6 +19,7 @@ final class DashboardTests: XCTestCase {
         var previous = 5
         for seconds in [0, 60, 5] {
             picker.tap()
+            Thread.sleep(forTimeInterval: 0.8)
             choose(seconds, movingFrom: previous)
             XCTAssertTrue(save.isEnabled, app.debugDescription)
             save.tap()
@@ -53,14 +54,15 @@ final class DashboardTests: XCTestCase {
 
     func choose(_ seconds: Int, movingFrom previous: Int) {
         let text = title(seconds)
-        let query = app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", text))
+        let choice = app.buttons.matching(NSPredicate(format: "label == %@", text)).firstMatch
         for _ in 0..<30 {
-            let choices = query.allElementsBoundByIndex
-            if let choice = choices.first(where: { $0.isHittable }) {
-                choice.tap()
+            if choice.exists && choice.isHittable {
+                let frame = choice.frame
+                let screen = app.frame
+                app.coordinate(withNormalizedOffset: CGVector(dx: frame.midX / screen.width, dy: frame.midY / screen.height)).tap()
                 return
             }
-            let cells = app.descendants(matching: .any).matching(NSPredicate(format: "label MATCHES %@", "[0-9]+ s( \\(immediate\\))?")).allElementsBoundByIndex
+            let cells = app.buttons.matching(NSPredicate(format: "label MATCHES %@", "[0-9]+ s( \\(immediate\\))?")).allElementsBoundByIndex
             let visible = cells.filter { $0.isHittable && $0.frame.width > 20 && $0.frame.height > 12 }
             guard let row = visible.dropFirst(visible.count / 2).first else {
                 XCTFail("No visible entries in delay menu. \(app.debugDescription)")
@@ -73,6 +75,7 @@ final class DashboardTests: XCTestCase {
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y - direction * 0.12))
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: y + direction * 0.12))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .fast, thenHoldForDuration: 0)
+            Thread.sleep(forTimeInterval: 0.35)
         }
         XCTFail("Could not scroll to \(text). \(app.debugDescription)")
     }
