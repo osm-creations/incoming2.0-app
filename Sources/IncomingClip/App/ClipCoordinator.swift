@@ -17,6 +17,7 @@ final class ClipCoordinator: ObservableObject {
     @Published private(set) var hasInjectUserId = false
     @Published private(set) var usesPlainPresentation = false
     @Published private(set) var usesNoteAsCallerName = false
+    private(set) var revealDelaySeconds = RevealDelay.defaultSeconds
     private var configuredName: String?
     private var selectedName: String?
     private var usesLegacyNoteName = false
@@ -25,6 +26,7 @@ final class ClipCoordinator: ObservableObject {
     func handle(url: URL) async {
         let requestId = UUID()
         currentInvocation = requestId
+        revealDelaySeconds = RevealDelay.defaultSeconds
         configuredName = nil
         selectedName = nil
         usesNoteAsCallerName = false
@@ -48,6 +50,7 @@ final class ClipCoordinator: ObservableObject {
                 ))
             )
             guard currentInvocation == requestId else { return }
+            revealDelaySeconds = RevealDelay.seconds(data.configuration.revealDelaySeconds)
             configuredName = data.configuration.callerName
             hasInjectUserId = data.configuration.hasInjectUserId == true
             usesPlainPresentation = data.configuration.usesPlainPresentation == true
@@ -99,7 +102,7 @@ final class ClipCoordinator: ObservableObject {
 
     func enterBlack(text: String, session: ClipSession) {
         guard case .notes(_, let active) = state, active.id == session.id else { return }
-        CallEffectsController.confirmTripleTap()
+        CallEffectsController.confirmCue()
         state = .black(text: text, session: session)
         Task {
             let _: StatusData? = try? await APIClient.shared.request(
@@ -109,6 +112,11 @@ final class ClipCoordinator: ObservableObject {
                 clipToken: session.token
             )
         }
+    }
+
+    func returnToNote(text: String, session: ClipSession) {
+        guard case .black(_, let active) = state, active.id == session.id else { return }
+        state = .notes(text: text, session: session)
     }
 
     func reveal(text: String, session: ClipSession) {

@@ -1,5 +1,14 @@
 import Foundation
 
+enum RevealDelay {
+    static let defaultSeconds = 5
+    static let range = 0...60
+
+    static func seconds(_ value: Int?) -> Int {
+        min(max(value ?? defaultSeconds, range.lowerBound), range.upperBound)
+    }
+}
+
 enum ClipMode: String, Codable, CaseIterable, Identifiable {
     case menu = "MENU"
     case staticNote = "STATIC"
@@ -36,6 +45,7 @@ struct ClipConfigRaw: Decodable {
     let staticText: String?
     let callerName: String?
     let injectUserId: String?
+    let revealDelaySeconds: Int?
     let usesPlainPresentation: Bool?
     let openOverflowInitially: Int
 }
@@ -61,6 +71,7 @@ struct PrimaryClipUpdateRequest: Encodable {
     var staticText: String? = nil
     var callerName: String? = nil
     var injectUserId: String? = nil
+    var revealDelaySeconds: Int? = nil
 }
 
 struct InjectSelectionData: Decodable {
@@ -73,6 +84,7 @@ struct ClipSession: Codable { let id: String; let token: String; let expiresAt: 
 struct SpectatorConfiguration: Decodable {
     let callerName: String?
     let hasInjectUserId: Bool?
+    let revealDelaySeconds: Int?
     let usesPlainPresentation: Bool?
     let name: String
     let mode: ClipMode

@@ -5,7 +5,7 @@ Open `Incoming2.xcworkspace` in Xcode. The shared schemes are `Incoming2` for th
 ## Set up a performance
 
 1. Sign in with the user ID or email and password supplied by the administrator.
-2. Open **Settings → App Clip Settings**. Enter the force word or note and the caller name. Tap **Set & Save**. **Notes Input** on the dashboard lets you change the saved caller name independently.
+2. Open **Settings → App Clip Settings**. Enter the force word or note, the caller name, and a reveal delay from 0 to 60 seconds. New accounts start at 5 seconds. Tap **Set & Save**. **Notes Input** on the dashboard lets you change the saved caller name independently.
 3. To use a live selection, open **Settings**, enter your **Inject User ID** and tap **Save**. Clear the ID and save to turn off Inject for the next App Clip session.
 4. Return to **App Clip Settings** and choose **Copy Link** or **Write NFC Tag**. Use the signed link for this performer.
 
@@ -15,6 +15,6 @@ The Clip opens to an editable note. Tap **Aa** while editing to use the first no
 
 With Inject enabled, press and hold the **checklist** icon next to **Aa** to preview the current Inject selection. The same checklist works with the keyboard closed. In plain Notes, tap **Get caller name**. **Use** selects the Inject name for this performance. **Close** preserves the current caller-name choice. These choices apply only to the active App Clip session.
 
-Triple-tap the note to enter the black screen. Triple-tap the black screen again. Each accepted triple-tap gives one haptic pulse on supported iPhones. The simulated incoming call appears five seconds after the second triple-tap. Slide to answer to show **Call Failed** and return to the note.
+Triple-tap the note to enter the black screen. Press either iPhone volume button once to start the saved delay. At maximum volume use Volume Down, and at minimum use Volume Up. A supported iPhone gives one haptic pulse when the screen goes black and one when the countdown starts. A delay of 0 reveals immediately. Slide to answer the simulated call, or tap the name in the plain presentation, to return to the note.
 
 See [App Clip testing](APP_CLIP_TESTING.md) for the simulator and device checks.

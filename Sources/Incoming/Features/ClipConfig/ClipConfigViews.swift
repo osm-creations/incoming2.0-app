@@ -15,6 +15,7 @@ struct PrimaryClipSettingsView: View {
     @State private var savedText = ""
     @State private var callerName = ""
     @State private var savedCallerName = ""
+    @State private var revealDelaySeconds = RevealDelay.defaultSeconds
     @State private var isSaving = false
     @State private var copied = false
     @State private var alertMessage: String?
@@ -56,6 +57,7 @@ struct PrimaryClipSettingsView: View {
                 }
 
             case .ready(let data):
+                let savedDelay = RevealDelay.seconds(data.config.revealDelaySeconds)
                 ScrollView {
                     VStack(spacing: 18) {
                         IncomingCard {
@@ -89,6 +91,24 @@ struct PrimaryClipSettingsView: View {
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
 
+                                LabeledContent {
+                                    Picker("Reveal delay", selection: $revealDelaySeconds) {
+                                        ForEach(RevealDelay.range, id: \.self) { seconds in
+                                            if seconds == 0 {
+                                                Text("0 s (immediate)").tag(seconds)
+                                            } else {
+                                                Text("\(seconds) s").tag(seconds)
+                                            }
+                                        }
+                                    }
+                                    .labelsHidden()
+                                    .pickerStyle(.menu)
+                                    .accessibilityIdentifier("settings.revealDelay")
+                                } label: {
+                                    Label("Reveal delay", systemImage: "timer")
+                                        .font(.headline)
+                                }
+
                                 if draftText.utf16.count > 500 || callerName.utf16.count > 120 {
                                     Text("Notes can contain up to 500 characters and caller names up to 120.")
                                         .font(.footnote)
@@ -109,7 +129,8 @@ struct PrimaryClipSettingsView: View {
                                 }
                                 .buttonStyle(IncomingButtonStyle(prominent: true))
                                 .disabled(
-                                    isSaving || (draftText == savedText && callerName == savedCallerName)
+                                    isSaving || (draftText == savedText && callerName == savedCallerName
+                                        && revealDelaySeconds == savedDelay)
                                         || draftText.utf16.count > 500 || callerName.utf16.count > 120
                                 )
                             }
@@ -211,6 +232,7 @@ struct PrimaryClipSettingsView: View {
             savedText = serverText
             callerName = loaded.config.callerName ?? ""
             savedCallerName = callerName
+            revealDelaySeconds = RevealDelay.seconds(loaded.config.revealDelaySeconds)
             loadState = .ready(loaded)
         } catch {
             loadState = .failed(error.localizedDescription)
@@ -218,7 +240,9 @@ struct PrimaryClipSettingsView: View {
     }
 
     private func save() async {
-        guard case .ready = loadState, !isSaving else { return }
+        guard case .ready(let current) = loadState, !isSaving else { return }
+        let previousDelay = RevealDelay.seconds(current.config.revealDelaySeconds)
+        let changedDelay = revealDelaySeconds == previousDelay ? nil : revealDelaySeconds
 
         isSaving = true
         defer { isSaving = false }
@@ -229,7 +253,8 @@ struct PrimaryClipSettingsView: View {
                 method: "PATCH",
                 body: AnyEncodable(PrimaryClipUpdateRequest(
                     staticText: draftText == savedText ? nil : draftText,
-                    callerName: callerName == savedCallerName ? nil : callerName
+                    callerName: callerName == savedCallerName ? nil : callerName,
+                    revealDelaySeconds: changedDelay
                 ))
             )
             savedText = updated.config.staticText ?? draftText
@@ -237,6 +262,11 @@ struct PrimaryClipSettingsView: View {
             savedCallerName = updated.config.callerName ?? ""
             callerName = savedCallerName
             loadState = .ready(updated)
+            if let changedDelay, updated.config.revealDelaySeconds != changedDelay {
+                alertMessage = "The server did not confirm the new reveal delay. Please try saving again."
+            } else {
+                revealDelaySeconds = RevealDelay.seconds(updated.config.revealDelaySeconds)
+            }
         } catch {
             alertMessage = error.localizedDescription
         }

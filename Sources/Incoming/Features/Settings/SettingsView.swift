@@ -47,7 +47,7 @@ private struct PerformerGuideView: View {
     var body: some View {
         List {
             Section("Prepare the note and call") {
-                Text("In Settings → App Clip Settings, enter the force word or note and the caller name. Tap Set & Save. To change the caller name from the dashboard, open Notes Input, edit the name, and save.")
+                Text("In Settings → App Clip Settings, enter the force word or note, the caller name, and a reveal delay from 0 to 60 seconds. Tap Set & Save. To change the caller name from the dashboard, open Notes Input, edit the name, and save.")
                 Text("In App Clip Settings, tap Copy Link or Write NFC Tag. Opening that link on the spectator’s iPhone starts the performance.")
                 Text("To use the note as the caller name for this performance, tap Aa while editing in the App Clip. The call uses the first nonempty line, including later edits. Tap Aa again to return to the previous caller name. In plain Notes, use Tools → Use note as caller name.")
             }
@@ -56,7 +56,7 @@ private struct PerformerGuideView: View {
                 Text("In App Clip Notes, press and hold the checklist icon beside Aa to preview the latest Inject selection. The same checklist is available when the keyboard is closed. In plain Notes, tap Get caller name. Tap Use to choose the selection for this performance, or Close to keep the current caller name.")
             }
             Section("Reveal the call") {
-                Text("Triple-tap inside the note to show a black screen. Triple-tap the black screen again. Each accepted triple-tap gives one haptic pulse on supported iPhones. The call appears five seconds after the second triple-tap. Slide to answer. After Call Failed, the edited note returns.")
+                Text("Triple-tap the note to turn the screen black. Press either volume button once to start the saved delay. At maximum volume use Volume Down, and at minimum use Volume Up. A supported iPhone gives a haptic pulse for each step. Zero seconds reveals immediately. Slide to answer the simulated call or tap the plain name reveal to return to the note.")
             }
         }
         .navigationTitle("Performer Guide")

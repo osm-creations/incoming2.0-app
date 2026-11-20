@@ -5,7 +5,7 @@ import UIKit
 final class CallEffectsController: ObservableObject {
     private var vibrationTask: Task<Void, Never>?
 
-    static func confirmTripleTap() {
+    static func confirmCue() {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 

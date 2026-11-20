@@ -32,9 +32,12 @@ struct ClipRootView: View {
                 .id(session.id)
 
             case .black(let text, let session):
-                BlackPerformanceView {
-                    coordinator.reveal(text: text, session: session)
-                }
+                BlackPerformanceView(
+                    delaySeconds: coordinator.revealDelaySeconds,
+                    onReveal: { coordinator.reveal(text: text, session: session) },
+                    onReturnToNote: { coordinator.returnToNote(text: text, session: session) }
+                )
+                .id(session.id)
 
             case .call(let text, let session):
                 let caller = coordinator.callerName(from: text).callerDisplayName
