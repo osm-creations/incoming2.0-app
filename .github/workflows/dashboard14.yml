@@ -1,0 +1,57 @@
+name: Verify dashboard branding and Settings on iPhone
+on:
+  push:
+    branches: ['verify/dashboard-settings-build14']
+permissions:
+  contents: read
+jobs:
+  dashboard:
+    runs-on: macos-15
+    timeout-minutes: 28
+    defaults:
+      run:
+        working-directory: .github/ui-smoke
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start iPhone simulator
+        run: |
+          bash select-xcode.sh
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool NO
+          python3 choose-simulator.py large
+          device="$(tail -2 "$GITHUB_ENV" | sed -n 's/^DEVICE=//p')"
+          xcrun simctl boot "$device"
+      - name: Prepare the full app for the local fixture
+        run: |
+          if ! command -v xcodegen >/dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi
+          xcodegen generate
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl spawn "$DEVICE" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
+          xcrun simctl status_bar "$DEVICE" override --time 10:23 --batteryState discharging --batteryLevel 49 || true
+      - name: Verify login, dashboard, settings persistence and two isolated accounts
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true' EXIT
+          for i in {1..12}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project DashboardSmoke.xcodeproj -scheme IncomingHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Dashboard.xcresult test > test.log 2>&1 || { tail -150 test.log; tail -30 worker.log; exit 1; }
+          curl -fsS http://127.0.0.1:8743/verified
+          grep -E 'DASHBOARD-QA|Executed [0-9]+ tests|TEST SUCCEEDED' test.log
+      - name: Export screenshots
+        if: always()
+        run: |
+          if test -d Dashboard.xcresult; then xcrun xcresulttool export attachments --path Dashboard.xcresult --output-path captures; fi
+          echo "$SIM_MODEL" > device.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dashboard-settings-build14
+          path: |
+            .github/ui-smoke/captures
+            .github/ui-smoke/device.txt
+            .github/ui-smoke/test.log
+            .github/ui-smoke/worker.log
