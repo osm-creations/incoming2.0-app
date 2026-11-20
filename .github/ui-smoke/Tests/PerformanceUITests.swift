@@ -82,11 +82,19 @@ final class PerformanceUITests: XCTestCase {
         print("NOTE-LAYOUT", "keyboard gap", keyboardGap)
         XCTAssertEqual(keyboardGap, 10, accuracy: 2)
         capture("02-Editing")
-        note.typeText("Jamie")
+        // Use the visible software keys. Synthesized hardware typing can replace the
+        // software keyboard mid-test and reshow its first-launch tutorial.
+        for letter in ["J", "a", "m", "i", "e"] {
+            let key = keyboard.keys.matching(NSPredicate(format: "label ==[c] %@", letter)).firstMatch
+            XCTAssertTrue(key.waitForExistence(timeout: 4) && key.isHittable, letter)
+            key.tap()
+        }
+        XCTAssertEqual((note.value as? String)?.lowercased(), "jamie", "Text entered through keyboard")
+        let typed = note.value as? String
         for key in ["formatting", "checklist", "table", "attachment"] {
             button(key).tap()
             XCTAssertTrue(keyboard.exists)
-            XCTAssertEqual(note.value as? String, "Jamie", key)
+            XCTAssertEqual(note.value as? String, typed, key)
         }
         let last = button("bold")
         let anchor = button("table")
@@ -95,11 +103,11 @@ final class PerformanceUITests: XCTestCase {
         start.press(forDuration: 0.12, thenDragTo: end)
         inspect(["markup", "bold"], aboveKeyboard: true)
         last.tap()
-        XCTAssertEqual(note.value as? String, "Jamie")
+        XCTAssertEqual(note.value as? String, typed)
         capture("03-Editing-scrolled")
         button("done").tap()
         XCTAssertTrue(keyboard.waitForNonExistence(timeout: 6))
-        XCTAssertEqual(note.value as? String, "Jamie")
+        XCTAssertEqual(note.value as? String, typed)
         app.terminate()
         app.launchEnvironment["FIXTURE_PROFILE"] = "empty"
         app.launch()
