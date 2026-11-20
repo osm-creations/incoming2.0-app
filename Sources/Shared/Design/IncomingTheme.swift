@@ -61,7 +61,6 @@ struct IncomingButtonStyle: ButtonStyle {
 struct IncomingNotesView: View {
     let showsSave: Bool
     let onBack: (() -> Void)?
-    let onTextChanged: (String) -> Void
     let onSave: ((String) -> Void)?
     let onTripleTap: ((String) -> Void)?
     let onShareLongPress: (() -> Void)?
@@ -77,7 +76,6 @@ struct IncomingNotesView: View {
         initialText: String,
         showsSave: Bool = false,
         onBack: (() -> Void)? = nil,
-        onTextChanged: @escaping (String) -> Void = { _ in },
         onSave: ((String) -> Void)? = nil,
         onTripleTap: ((String) -> Void)? = nil,
         onShareLongPress: (() -> Void)? = nil,
@@ -87,7 +85,6 @@ struct IncomingNotesView: View {
     ) {
         self.showsSave = showsSave
         self.onBack = onBack
-        self.onTextChanged = onTextChanged
         self.onSave = onSave
         self.onTripleTap = onTripleTap
         self.onShareLongPress = onShareLongPress
@@ -122,7 +119,7 @@ struct IncomingNotesView: View {
 
             IncomingTripleTapTextView(
                 text: $noteText, editor: editor,
-                onTextChanged: onTextChanged, onTripleTap: onTripleTap
+                onTripleTap: onTripleTap
             )
             .padding(.horizontal, 24)
             .padding(.top, 5)
@@ -165,7 +162,7 @@ struct IncomingNotesView: View {
             }
             IncomingTripleTapTextView(
                 text: $noteText, editor: editor,
-                onTextChanged: onTextChanged, onTripleTap: onTripleTap,
+                onTripleTap: onTripleTap,
                 isPlain: true
             )
             .padding(12)
@@ -238,7 +235,7 @@ struct IncomingNotesView: View {
                     .disabled(noteText.isEmpty)
                     if showsSave {
                         Button { finishEditing() } label: {
-                            Label("Save Note", systemImage: "checkmark")
+                            Label("Save Caller Name", systemImage: "checkmark")
                         }
                     }
                 } label: {
@@ -258,14 +255,13 @@ struct IncomingNotesView: View {
                         .background(Color(red: 0.94, green: 0.71, blue: 0), in: Circle())
                         .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.7))
                 }
-                .accessibilityLabel(showsSave ? "Save note" : "Done")
+                .accessibilityLabel(showsSave ? "Save caller name" : "Done")
             }
         }
         .font(.system(size: 19, weight: .medium))
     }
 
     private func finishEditing() {
-        onTextChanged(noteText)
         onSave?(noteText)
         editor.textView?.resignFirstResponder()
     }
@@ -396,7 +392,6 @@ private final class NoteEditorController: ObservableObject {
 private struct IncomingTripleTapTextView: UIViewRepresentable {
     @Binding var text: String
     let editor: NoteEditorController
-    let onTextChanged: (String) -> Void
     let onTripleTap: ((String) -> Void)?
     var isPlain = false
 
@@ -485,7 +480,6 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
 
         func textViewDidChange(_ textView: UITextView) {
             parent.text = textView.text
-            parent.onTextChanged(textView.text)
             parent.editor.canUndo = textView.undoManager?.canUndo ?? false
             styleNote(textView)
         }

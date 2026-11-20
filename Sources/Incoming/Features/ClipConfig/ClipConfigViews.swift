@@ -251,11 +251,10 @@ struct NotesInputView: View {
     @State private var loaded = false
     @State private var hasInjectUserId = false
     @State private var usesPlainPresentation = false
-    @State private var draftText = ""
+    @State private var initialCallerName = ""
     @State private var loadError: String?
     @State private var saveError: String?
     @State private var isSaving = false
-    @State private var lastConfirmedText: String?
 
     var body: some View {
         Group {
@@ -266,7 +265,7 @@ struct NotesInputView: View {
                         Image(systemName: "exclamationmark.triangle")
                             .font(.system(size: 34))
                             .foregroundStyle(.yellow)
-                        Text("Couldn't load note")
+                        Text("Couldn't load caller name")
                             .font(.title3.bold())
                         Text(loadError)
                             .font(.footnote)
@@ -282,32 +281,21 @@ struct NotesInputView: View {
                 }
             } else if loaded {
                 IncomingNotesView(
-                    initialText: draftText,
+                    initialText: initialCallerName,
                     showsSave: true,
                     onBack: { dismiss() },
-                    onTextChanged: { draftText = $0 },
                     onSave: save,
                     onTripleTap: nil,
                     showsSystemShare: hasInjectUserId,
                     usesPlainPresentation: usesPlainPresentation
                 )
                 .disabled(isSaving)
-                .safeAreaInset(edge: .bottom, spacing: 0) {
-                    if isSaving || lastConfirmedText == draftText {
-                        Text(isSaving ? "Saving…" : "Note saved")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 4)
-                            .background(Color.black)
-                    }
-                }
             } else {
                 ZStack {
                     Color.black.ignoresSafeArea()
                     VStack(spacing: 12) {
                         ProgressView()
-                        Text("Loading note…")
+                        Text("Loading caller name…")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -335,7 +323,7 @@ struct NotesInputView: View {
 
         do {
             let data: PrimaryClipData = try await session.authenticated("/api/v1/clip-configs/primary")
-            draftText = data.config.staticText ?? ""
+            initialCallerName = data.config.callerName ?? ""
             hasInjectUserId = !(data.config.injectUserId ?? "").isEmpty
             usesPlainPresentation = data.config.usesPlainPresentation == true
             loaded = true
@@ -346,24 +334,22 @@ struct NotesInputView: View {
 
     private func save(_ text: String) {
         guard !isSaving else { return }
-        guard text.utf16.count <= 500 else {
-            saveError = "Use up to 500 characters for the force word or note."
+        let callerName = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard callerName.utf16.count <= 120 else {
+            saveError = "Use up to 120 characters for the caller name."
             return
         }
         isSaving = true
-        lastConfirmedText = nil
         Task {
             defer { isSaving = false }
             do {
                 let data: PrimaryClipData = try await session.authenticated(
                     "/api/v1/clip-configs/primary",
                     method: "PATCH",
-                    body: AnyEncodable(PrimaryClipUpdateRequest(staticText: text))
+                    body: AnyEncodable(PrimaryClipUpdateRequest(callerName: callerName))
                 )
-                if (data.config.staticText ?? "") == text {
-                    lastConfirmedText = text
-                } else {
-                    saveError = "The server did not confirm this note. Please try saving again."
+                if (data.config.callerName ?? "") != callerName {
+                    saveError = "The server did not confirm the caller name. Please try saving again."
                 }
             } catch {
                 saveError = error.localizedDescription

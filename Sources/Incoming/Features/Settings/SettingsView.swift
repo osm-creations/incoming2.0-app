@@ -39,7 +39,7 @@ private struct PerformerGuideView: View {
     var body: some View {
         List {
             Section("Prepare the note and call") {
-                Text("In Settings → App Clip Settings, enter the force word or note and the caller name. Tap Set & Save. To change only the note, open Notes Input on the dashboard and tap the checkmark to save.")
+                Text("In Settings → App Clip Settings, enter the force word or note and the caller name. Tap Set & Save. To change the caller name from the dashboard, open Notes Input, edit the name, and save.")
                 Text("In App Clip Settings, tap Copy Link or Write NFC Tag. Opening that link on the spectator’s iPhone starts the performance.")
             }
             Section("Use Inject") {

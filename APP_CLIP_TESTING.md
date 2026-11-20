@@ -15,6 +15,8 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 | Clear the Inject User ID, save, and open a fresh session | Share is hidden. |
 | Reset the test performer's password under Users in the admin site | The old password stops working. The performer can sign in with the new password. |
 
+In the main app, open **Dashboard → Notes Input**. Change the caller name from Alex to Jamie and save. The name should stay in the editor with no confirmation footer. Reopen Notes Input to verify Jamie was saved. Open the same App Clip link again and perform without selecting an Inject value. The note should show Rose and the reveal should show Jamie.
+
 Use a physical iPhone to check vibration and NFC. In the main app, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
 
 ## Test account-specific presentations and settings
