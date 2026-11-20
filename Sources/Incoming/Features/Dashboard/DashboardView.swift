@@ -2,65 +2,82 @@ import SwiftUI
 
 struct DashboardView: View {
     @EnvironmentObject var session: AppSession
+    @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var clearMessage: String?
 
     var body: some View {
         NavigationStack {
-            ZStack {
-                IncomingTheme.background.ignoresSafeArea()
-
+            GeometryReader { viewport in
                 ScrollView {
-                    VStack(spacing: 20) {
-                        VStack(spacing: 8) {
-                            IncomingLogo(size: 92)
-
-                            Text("Incoming")
-                                .font(.system(size: 36, weight: .medium))
-                                .accessibilityAddTraits(.isHeader)
-
-                            Text("By OSM Creations")
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding(.top, 24)
-                        .padding(.bottom, 20)
-
-                        NavigationLink {
-                            NotesInputView()
-                        } label: {
-                            DashboardTile(icon: "doc.text.fill", title: "NOTES INPUT")
-                        }
-
-                        HStack(spacing: 14) {
-                            Button {
-                                Task { await clearSavedText() }
-                            } label: {
-                                Label("CLEAR", systemImage: "sparkles")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(IncomingButtonStyle(prominent: false))
-
-                            NavigationLink {
-                                SettingsView()
-                            } label: {
-                                Label("SETTINGS", systemImage: "gearshape.fill")
-                                    .frame(maxWidth: .infinity)
-                            }
-                            .buttonStyle(IncomingButtonStyle(prominent: false))
-                        }
-
-                        if let clearMessage {
-                            Text(clearMessage)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                    VStack(spacing: 0) {
+                        header
+                        Spacer(minLength: 24)
+                        actions
                     }
-                    .padding(22)
+                    .padding(.horizontal, 22)
+                    .padding(.vertical, verticalSizeClass == .compact ? 12 : 22)
                     .frame(maxWidth: 620)
+                    .frame(maxWidth: .infinity, minHeight: viewport.size.height)
                 }
             }
+            .background(IncomingTheme.background.ignoresSafeArea())
             .navigationBarHidden(true)
         }
         .tint(IncomingTheme.accent)
+    }
+
+    private var header: some View {
+        VStack(spacing: 8) {
+            IncomingLogo(size: verticalSizeClass == .compact ? 58 : 92)
+
+            Text("Incoming 2.0")
+                .font(.largeTitle.weight(.medium))
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("dashboard.title")
+
+            Text("By OSM Creations")
+                .foregroundStyle(.secondary)
+        }
+        .multilineTextAlignment(.center)
+    }
+
+    private var actions: some View {
+        VStack(spacing: 14) {
+            if let clearMessage {
+                Text(clearMessage)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
+            NavigationLink {
+                NotesInputView()
+            } label: {
+                DashboardTile(minimumHeight: verticalSizeClass == .compact ? 88 : 150)
+            }
+            .accessibilityIdentifier("dashboard.notes")
+
+            let row = typeSize >= .xxxLarge
+                ? AnyLayout(VStackLayout(spacing: 14))
+                : AnyLayout(HStackLayout(spacing: 14))
+            row {
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Label("SETTINGS", systemImage: "gearshape.fill")
+                }
+                .accessibilityIdentifier("dashboard.settings")
+
+                Button {
+                    Task { await clearSavedText() }
+                } label: {
+                    Label("CLEAR", systemImage: "sparkles")
+                }
+                .accessibilityIdentifier("dashboard.clear")
+            }
+            .buttonStyle(IncomingButtonStyle(prominent: false))
+        }
     }
 
     private func clearSavedText() async {
@@ -78,19 +95,19 @@ struct DashboardView: View {
 }
 
 private struct DashboardTile: View {
-    let icon: String
-    let title: String
+    let minimumHeight: CGFloat
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: icon)
+            Image(systemName: "doc.text.fill")
                 .font(.system(size: 34))
                 .foregroundStyle(IncomingTheme.accent)
 
-            Text(title)
+            Text("NOTES INPUT")
                 .font(.title3)
+                .multilineTextAlignment(.center)
         }
-        .frame(maxWidth: .infinity, minHeight: 150)
+        .frame(maxWidth: .infinity, minHeight: minimumHeight)
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(IncomingTheme.card.opacity(0.75))

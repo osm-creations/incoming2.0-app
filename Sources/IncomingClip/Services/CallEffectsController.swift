@@ -5,6 +5,10 @@ import UIKit
 final class CallEffectsController: ObservableObject {
     private var vibrationTask: Task<Void, Never>?
 
+    static func confirmTripleTap() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+    }
+
     func start() {
         guard vibrationTask == nil else { return }
         vibrationTask = Task { @MainActor in

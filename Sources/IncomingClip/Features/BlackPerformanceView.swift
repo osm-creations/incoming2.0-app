@@ -22,6 +22,7 @@ struct BlackPerformanceView: View {
 
     private func scheduleReveal() {
         guard scenePhase == .active, pendingReveal == nil else { return }
+        CallEffectsController.confirmTripleTap()
         pendingReveal = Task { @MainActor in
             do {
                 try await Task.sleep(for: .seconds(5))

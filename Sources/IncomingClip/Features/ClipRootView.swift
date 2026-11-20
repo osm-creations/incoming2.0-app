@@ -17,6 +17,10 @@ struct ClipRootView: View {
             case .notes(let text, let session):
                 NotesReplicaView(
                     initialText: text,
+                    usesNoteAsCallerName: Binding(
+                        get: { coordinator.usesNoteAsCallerName },
+                        set: { coordinator.setUsesNoteAsCallerName($0, session: session) }
+                    ),
                     canFetchSelection: coordinator.hasInjectUserId,
                     fetchSelection: { try await coordinator.fetchSelection(session: session) },
                     onUseSelection: { coordinator.useSelection($0, session: session) },

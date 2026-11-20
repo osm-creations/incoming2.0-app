@@ -77,8 +77,9 @@ struct IncomingNotesView: View {
     let onBack: (() -> Void)?
     let onSave: ((String) -> Void)?
     let onTripleTap: ((String) -> Void)?
-    let onShareLongPress: (() -> Void)?
-    let shareIsLoading: Bool
+    let usesNoteAsCallerName: Binding<Bool>?
+    let onGetCallerName: (() -> Void)?
+    let isFetchingCallerName: Bool
     let showsSystemShare: Bool
     let usesPlainPresentation: Bool
 
@@ -92,8 +93,9 @@ struct IncomingNotesView: View {
         onBack: (() -> Void)? = nil,
         onSave: ((String) -> Void)? = nil,
         onTripleTap: ((String) -> Void)? = nil,
-        onShareLongPress: (() -> Void)? = nil,
-        shareIsLoading: Bool = false,
+        usesNoteAsCallerName: Binding<Bool>? = nil,
+        onGetCallerName: (() -> Void)? = nil,
+        isFetchingCallerName: Bool = false,
         showsSystemShare: Bool = false,
         usesPlainPresentation: Bool
     ) {
@@ -101,8 +103,9 @@ struct IncomingNotesView: View {
         self.onBack = onBack
         self.onSave = onSave
         self.onTripleTap = onTripleTap
-        self.onShareLongPress = onShareLongPress
-        self.shareIsLoading = shareIsLoading
+        self.usesNoteAsCallerName = usesNoteAsCallerName
+        self.onGetCallerName = onGetCallerName
+        self.isFetchingCallerName = isFetchingCallerName
         self.showsSystemShare = showsSystemShare
         self.usesPlainPresentation = usesPlainPresentation
         _noteText = State(initialValue: initialText)
@@ -163,6 +166,10 @@ struct IncomingNotesView: View {
                 Text("Note").font(.title2.bold()).accessibilityAddTraits(.isHeader)
                 Spacer()
                 Menu("Tools") {
+                    if let usesNoteAsCallerName {
+                        Toggle("Use note as caller name", isOn: usesNoteAsCallerName)
+                            .accessibilityIdentifier("notes.useNoteAsCallerName")
+                    }
                     Button("Copy note") { UIPasteboard.general.string = noteText }
                         .disabled(noteText.isEmpty)
                     Button("Insert checklist item") { editor.insertLine("☐ ") }
@@ -184,16 +191,17 @@ struct IncomingNotesView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(white: 0.12), in: RoundedRectangle(cornerRadius: 6))
 
-            if let onShareLongPress {
-                Text(shareIsLoading ? "Fetching caller name…" : "Get caller name")
+            if let onGetCallerName {
+                Text(isFetchingCallerName ? "Fetching caller name…" : "Get caller name")
                     .foregroundStyle(IncomingTheme.accent)
                     .frame(minHeight: 44)
                     .contentShape(Rectangle())
                     .gesture(LongPressGesture(minimumDuration: 0.55).exclusively(before: TapGesture())
-                        .onEnded { _ in onShareLongPress() })
+                        .onEnded { _ in onGetCallerName() })
                     .accessibilityAddTraits(.isButton)
-                    .accessibilityAction { onShareLongPress() }
-                    .disabled(shareIsLoading)
+                    .accessibilityIdentifier("notes.getCallerName")
+                    .accessibilityAction { onGetCallerName() }
+                    .disabled(isFetchingCallerName)
             } else if showsSystemShare {
                 ShareLink("Share note", item: noteText).disabled(noteText.isEmpty)
             }
@@ -220,7 +228,8 @@ struct IncomingNotesView: View {
             Spacer(minLength: 0)
 
             HStack(spacing: 0) {
-                shareControl
+                accessory("square.and.arrow.up", label: "Share", id: "notes.share", width: 51, height: 44)
+                    .foregroundStyle(Color(white: 0.33))
                 accessory("ellipsis", label: "Note options", id: "notes.more", width: 50, height: 44)
             }
             .noteControlBackground(Capsule())
@@ -240,35 +249,6 @@ struct IncomingNotesView: View {
         }
     }
 
-    @ViewBuilder
-    private var shareControl: some View {
-        let button = Button(action: {}) {
-            Group {
-                if shareIsLoading {
-                    ProgressView().tint(.white)
-                } else {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 22))
-                        .foregroundStyle(onShareLongPress == nil ? Color(white: 0.33) : .white)
-                }
-            }
-            .frame(width: 51, height: 44)
-            .contentShape(Rectangle())
-        }
-        .accessibilityLabel("Share")
-        .accessibilityIdentifier("notes.share")
-
-        if let onShareLongPress {
-            button
-                .simultaneousGesture(LongPressGesture(minimumDuration: 0.55).onEnded { _ in onShareLongPress() })
-                .accessibilityHint("Fetches a caller name for this performance")
-                .accessibilityAction { onShareLongPress() }
-                .disabled(shareIsLoading)
-        } else {
-            button
-        }
-    }
-
     private func finishEditing() {
         onSave?(noteText)
         editor.textView?.resignFirstResponder()
@@ -277,7 +257,7 @@ struct IncomingNotesView: View {
     private var idleTools: some View {
         HStack(spacing: 0) {
             HStack(spacing: 0) {
-                accessory("checklist", label: "Checklist", id: "notes.checklist", width: 56)
+                checklistControl(width: 56)
                 accessory("paperclip", label: "Attachment", id: "notes.attachment", width: 56)
                 accessory("pencil.tip.crop.circle", label: "Markup", id: "notes.markup", width: 56)
             }
@@ -303,15 +283,8 @@ struct IncomingNotesView: View {
             let stride = min(80, max(48, (proxy.size.width - 6) / 5.35))
             ScrollView(.horizontal) {
                 HStack(spacing: stride - 44) {
-                    Button(action: {}) {
-                        Text("Aa")
-                            .font(.system(size: 22))
-                            .frame(width: 44, height: 48)
-                            .contentShape(Rectangle())
-                    }
-                    .accessibilityLabel("Formatting")
-                    .accessibilityIdentifier("notes.formatting")
-                    accessory("checklist", label: "Checklist", id: "notes.checklist")
+                    formattingControl
+                    checklistControl(width: 44)
                     accessory("tablecells", label: "Table", id: "notes.table")
                     accessory("paperclip", label: "Attachment", id: "notes.attachment")
                     accessory("pencil.tip.crop.circle", label: "Markup", id: "notes.markup")
@@ -324,6 +297,47 @@ struct IncomingNotesView: View {
             .noteControlBackground(Capsule())
         }
         .frame(height: 48)
+    }
+
+    @ViewBuilder
+    private var formattingControl: some View {
+        let button = Button {
+            usesNoteAsCallerName?.wrappedValue.toggle()
+        } label: {
+            Text("Aa")
+                .font(.system(size: 22))
+                .foregroundStyle(usesNoteAsCallerName?.wrappedValue == true ? IncomingTheme.notesYellow : .white)
+                .frame(width: 44, height: 48)
+                .contentShape(Rectangle())
+        }
+        .accessibilityIdentifier("notes.formatting")
+
+        if let usesNoteAsCallerName {
+            button
+                .accessibilityLabel("Use note as caller name")
+                .accessibilityValue(usesNoteAsCallerName.wrappedValue ? "On" : "Off")
+                .accessibilityAddTraits(usesNoteAsCallerName.wrappedValue ? .isSelected : [])
+        } else {
+            button.accessibilityLabel("Formatting")
+        }
+    }
+
+    @ViewBuilder
+    private func checklistControl(width: CGFloat) -> some View {
+        let button = accessory("checklist", label: "Checklist", id: "notes.checklist", width: width)
+        if let onGetCallerName {
+            button
+                .foregroundStyle(isFetchingCallerName ? Color.clear : .white)
+                .overlay {
+                    if isFetchingCallerName { ProgressView().tint(.white).allowsHitTesting(false) }
+                }
+                .simultaneousGesture(LongPressGesture(minimumDuration: 0.55).onEnded { _ in onGetCallerName() })
+                .accessibilityHint("Long-press to fetch a caller name for this performance")
+                .accessibilityAction { onGetCallerName() }
+                .disabled(isFetchingCallerName)
+        } else {
+            button
+        }
     }
 
     private func accessory(_ symbol: String, label: String, id: String,

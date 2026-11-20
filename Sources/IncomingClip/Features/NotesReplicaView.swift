@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NotesReplicaView: View {
     let initialText: String
+    @Binding var usesNoteAsCallerName: Bool
     let canFetchSelection: Bool
     let fetchSelection: () async throws -> String
     let onUseSelection: (String) -> Void
@@ -26,8 +27,9 @@ struct NotesReplicaView: View {
         IncomingNotesView(
             initialText: initialText,
             onTripleTap: onTripleTap,
-            onShareLongPress: canFetchSelection ? { isLookingUp = true } : nil,
-            shareIsLoading: isLookingUp,
+            usesNoteAsCallerName: $usesNoteAsCallerName,
+            onGetCallerName: canFetchSelection ? { isLookingUp = true } : nil,
+            isFetchingCallerName: isLookingUp,
             usesPlainPresentation: usesPlainPresentation
         )
         .task(id: isLookingUp) {

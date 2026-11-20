@@ -16,6 +16,7 @@ final class ClipCoordinator: ObservableObject {
     @Published private(set) var state: State = .awaitingInvocation
     @Published private(set) var hasInjectUserId = false
     @Published private(set) var usesPlainPresentation = false
+    @Published private(set) var usesNoteAsCallerName = false
     private var configuredName: String?
     private var selectedName: String?
     private var usesLegacyNoteName = false
@@ -26,6 +27,7 @@ final class ClipCoordinator: ObservableObject {
         currentInvocation = requestId
         configuredName = nil
         selectedName = nil
+        usesNoteAsCallerName = false
         usesLegacyNoteName = false
         hasInjectUserId = false
         usesPlainPresentation = false
@@ -87,10 +89,17 @@ final class ClipCoordinator: ObservableObject {
     func useSelection(_ value: String, session: ClipSession) {
         guard case .notes(_, let active) = state, active.id == session.id else { return }
         selectedName = value
+        usesNoteAsCallerName = false
+    }
+
+    func setUsesNoteAsCallerName(_ enabled: Bool, session: ClipSession) {
+        guard case .notes(_, let active) = state, active.id == session.id else { return }
+        usesNoteAsCallerName = enabled
     }
 
     func enterBlack(text: String, session: ClipSession) {
         guard case .notes(_, let active) = state, active.id == session.id else { return }
+        CallEffectsController.confirmTripleTap()
         state = .black(text: text, session: session)
         Task {
             let _: StatusData? = try? await APIClient.shared.request(
@@ -113,14 +122,14 @@ final class ClipCoordinator: ObservableObject {
     }
 
     func callerName(from text: String) -> String {
-        if let selectedName { return selectedName }
-        if let configuredName, !configuredName.isEmpty { return configuredName }
-        if usesLegacyNoteName {
-            return text.split(whereSeparator: \.isNewline)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .first(where: { !$0.isEmpty }) ?? "Unknown"
+        if !usesNoteAsCallerName {
+            if let selectedName { return selectedName }
+            if let configuredName, !configuredName.isEmpty { return configuredName }
+            if !usesLegacyNoteName { return "Unknown" }
         }
-        return "Unknown"
+        return text.split(whereSeparator: \.isNewline)
+            .lazy.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first(where: { !$0.isEmpty }) ?? "Unknown"
     }
 }
 
