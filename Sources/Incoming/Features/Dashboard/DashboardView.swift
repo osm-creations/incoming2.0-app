@@ -10,11 +10,11 @@ struct DashboardView: View {
         NavigationStack {
             GeometryReader { viewport in
                 ScrollView {
-                    VStack(spacing: 0) {
+                    VStack(spacing: 24) {
                         header
-                        Spacer(minLength: 24)
                         actions
                     }
+                    .fixedSize(horizontal: false, vertical: true)
                     .padding(.horizontal, 22)
                     .padding(.vertical, verticalSizeClass == .compact ? 12 : 22)
                     .frame(maxWidth: 620)
@@ -62,19 +62,19 @@ struct DashboardView: View {
                 ? AnyLayout(VStackLayout(spacing: 14))
                 : AnyLayout(HStackLayout(spacing: 14))
             row {
-                NavigationLink {
-                    SettingsView()
-                } label: {
-                    Label("SETTINGS", systemImage: "gearshape.fill")
-                }
-                .accessibilityIdentifier("dashboard.settings")
-
                 Button {
                     Task { await clearSavedText() }
                 } label: {
                     Label("CLEAR", systemImage: "sparkles")
                 }
                 .accessibilityIdentifier("dashboard.clear")
+
+                NavigationLink {
+                    SettingsView()
+                } label: {
+                    Label("SETTINGS", systemImage: "gearshape.fill")
+                }
+                .accessibilityIdentifier("dashboard.settings")
             }
             .buttonStyle(IncomingButtonStyle(prominent: false))
         }
