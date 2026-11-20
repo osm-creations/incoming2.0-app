@@ -6,13 +6,13 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 
 | Check | Expected result |
 |---|---|
-| Open with a blank Inject User ID | Notes shows Rose and the Share button is hidden. |
+| Open with a blank Inject User ID | Standard Notes shows Rose and a dim Share icon. Long-pressing Share leaves the note open. |
 | Edit the note and perform the two triple-taps | The screen stays black for five seconds after the second triple-tap, then the call shows the saved caller Alex. Sliding to answer returns to the edited note after Call Failed. |
 | Save your Inject User ID under Inject Input, update the Inject selection, and relaunch the Clip | Share is visible. Long-pressing it previews the current selection. |
 | Choose Close, then perform | The caller is still Alex. |
 | Long-press Share, choose Use, and perform | The call shows the accepted selection. The note keeps its own text. |
 | Start a fresh Clip session | The saved performer caller name applies again. |
-| Clear the Inject User ID, save, and open a fresh session | Share is hidden. |
+| Clear the Inject User ID, save, and open a fresh session | The standard Share icon is dim and Inject lookup is off. |
 | Reset the test performer's password under Users in the admin site | The old password stops working. The performer can sign in with the new password. |
 
 In the main app, open **Dashboard → Notes Input**. Change the caller name from Alex to Jamie and save. The name should stay in the editor with no confirmation footer. Reopen Notes Input to verify Jamie was saved. Open the same App Clip link again and perform without selecting an Inject value. The note should show Rose and the reveal should show Jamie.

@@ -109,35 +109,33 @@ struct IncomingNotesView: View {
     private var standardNotes: some View {
         VStack(spacing: 0) {
             notesTopBar
-                .padding(.horizontal, 16)
-                .padding(.top, 2)
+                .padding(.horizontal, 20)
 
             Text(openedAt.formatted(date: .long, time: .shortened))
-                .font(.footnote)
-                .foregroundStyle(Color(white: 0.57))
-                .padding(.top, 7)
+                .font(.subheadline)
+                .foregroundStyle(Color(white: 0.56))
+                .padding(.top, 9)
 
             IncomingTripleTapTextView(
                 text: $noteText, editor: editor,
                 onTripleTap: onTripleTap
             )
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 28)
             .padding(.top, 5)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             if editor.isEditing {
                 editingTools
-                    .padding(.horizontal, 8)
-                    .padding(.bottom, 7)
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 10)
             } else {
                 idleTools
-                    .padding(.horizontal, 23)
-                    .padding(.bottom, 2)
+                    .padding(.horizontal, 28)
             }
         }
         .tint(IncomingTheme.notesYellow)
         .foregroundStyle(.white)
-        .buttonStyle(.plain)
+        .buttonStyle(NoteToolbarButtonStyle())
         .background(Color.black.ignoresSafeArea())
     }
 
@@ -189,76 +187,69 @@ struct IncomingNotesView: View {
     }
 
     private var notesTopBar: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Button {
-                if let onBack { onBack() }
-                else { editor.textView?.resignFirstResponder() }
+                if let onBack { onBack() } else { editor.textView?.resignFirstResponder() }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
-                    .frame(width: 42, height: 42)
-                    .noteControlBackground(Circle())
+                    .font(.system(size: 22, weight: .semibold))
+                    .frame(width: 44, height: 44)
+                    .contentShape(Circle())
             }
+            .noteControlBackground(Circle())
             .accessibilityLabel(onBack == nil ? "End editing" : "Back")
-            .disabled(onBack == nil && !editor.isEditing)
+            .accessibilityIdentifier("notes.back")
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 0)
 
             HStack(spacing: 0) {
-                if let onShareLongPress {
-                    Group {
-                        if shareIsLoading { ProgressView().tint(IncomingTheme.notesYellow) }
-                        else { Image(systemName: "square.and.arrow.up") }
-                    }
-                    .frame(width: 48, height: 42)
-                    .contentShape(Rectangle())
-                    .onLongPressGesture(minimumDuration: 0.55, perform: onShareLongPress)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityAddTraits(.isButton)
-                    .accessibilityLabel(shareIsLoading ? "Fetching selection" : "Share")
-                    .accessibilityHint("Fetches a caller name for this performance")
-                    .accessibilityAction { onShareLongPress() }
-                    .disabled(shareIsLoading)
-                } else if showsSystemShare {
-                    ShareLink(item: noteText) {
-                        Image(systemName: "square.and.arrow.up")
-                            .frame(width: 48, height: 42)
-                    }
-                    .accessibilityLabel("Share")
-                    .disabled(noteText.isEmpty)
-                    .opacity(noteText.isEmpty ? 0.32 : 1)
-                }
-                Menu {
-                    Button { UIPasteboard.general.string = noteText } label: {
-                        Label("Copy Note", systemImage: "doc.on.doc")
-                    }
-                    .disabled(noteText.isEmpty)
-                    if showsSave {
-                        Button { finishEditing() } label: {
-                            Label("Save Caller Name", systemImage: "checkmark")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .frame(width: 48, height: 42)
-                }
-                .accessibilityLabel("Note options")
+                shareControl
+                accessory("ellipsis", label: "Note options", id: "notes.more", width: 50, height: 44)
             }
             .noteControlBackground(Capsule())
 
             if editor.isEditing {
                 Button(action: finishEditing) {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 22, weight: .medium))
+                        .font(.system(size: 23, weight: .semibold))
                         .foregroundStyle(.white)
-                        .frame(width: 42, height: 42)
-                        .background(Color(red: 0.94, green: 0.71, blue: 0), in: Circle())
-                        .overlay(Circle().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.7))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Circle())
                 }
+                .noteControlBackground(Circle(), tint: Color(red: 0.87, green: 0.68, blue: 0.19))
                 .accessibilityLabel(showsSave ? "Save caller name" : "Done")
+                .accessibilityIdentifier("notes.done")
             }
         }
-        .font(.system(size: 19, weight: .medium))
+    }
+
+    @ViewBuilder
+    private var shareControl: some View {
+        let button = Button(action: {}) {
+            Group {
+                if shareIsLoading {
+                    ProgressView().tint(.white)
+                } else {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.system(size: 22))
+                        .foregroundStyle(onShareLongPress == nil ? Color(white: 0.33) : .white)
+                }
+            }
+            .frame(width: 51, height: 44)
+            .contentShape(Rectangle())
+        }
+        .accessibilityLabel("Share")
+        .accessibilityIdentifier("notes.share")
+
+        if let onShareLongPress {
+            button
+                .simultaneousGesture(LongPressGesture(minimumDuration: 0.55).onEnded { _ in onShareLongPress() })
+                .accessibilityHint("Fetches a caller name for this performance")
+                .accessibilityAction { onShareLongPress() }
+                .disabled(shareIsLoading)
+        } else {
+            button
+        }
     }
 
     private func finishEditing() {
@@ -267,82 +258,97 @@ struct IncomingNotesView: View {
     }
 
     private var idleTools: some View {
-        HStack {
-            HStack(spacing: 4) {
-                checklistButton
-                drawingSymbol
+        HStack(spacing: 0) {
+            HStack(spacing: 0) {
+                accessory("checklist", label: "Checklist", id: "notes.checklist", width: 56)
+                accessory("paperclip", label: "Attachment", id: "notes.attachment", width: 56)
+                accessory("pencil.tip.crop.circle", label: "Markup", id: "notes.markup", width: 56)
             }
-            .padding(.horizontal, 4)
             .noteControlBackground(Capsule())
 
-            Spacer()
+            Spacer(minLength: 4)
             Button { editor.beginEditing() } label: {
                 Image(systemName: "square.and.pencil")
-                    .frame(width: 44, height: 44)
-                    .noteControlBackground(Circle())
+                    .font(.system(size: 23))
+                    .foregroundStyle(noteText.isEmpty ? Color(white: 0.33) : .white)
+                    .frame(width: 48, height: 48)
+                    .contentShape(Circle())
             }
+            .noteControlBackground(Circle())
             .accessibilityLabel("Edit note")
+            .accessibilityIdentifier("notes.compose")
         }
-        .font(.system(size: 19))
     }
 
     private var editingTools: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 12) {
-                Menu {
-                    Button("Uppercase") { editor.changeCase(uppercase: true) }
-                    Button("Lowercase") { editor.changeCase(uppercase: false) }
-                } label: {
-                    Text("Aa").font(.system(size: 19))
-                        .frame(width: 52, height: 44)
+        GeometryReader { proxy in
+            // Match the spacing of the five leading tools while leaving the next tool discoverable.
+            let stride = min(80, max(48, (proxy.size.width - 6) / 5.35))
+            ScrollView(.horizontal) {
+                HStack(spacing: stride - 44) {
+                    Button(action: {}) {
+                        Text("Aa")
+                            .font(.system(size: 22))
+                            .frame(width: 44, height: 48)
+                            .contentShape(Rectangle())
+                    }
+                    .accessibilityLabel("Formatting")
+                    .accessibilityIdentifier("notes.formatting")
+                    accessory("checklist", label: "Checklist", id: "notes.checklist")
+                    accessory("tablecells", label: "Table", id: "notes.table")
+                    accessory("paperclip", label: "Attachment", id: "notes.attachment")
+                    accessory("pencil.tip.crop.circle", label: "Markup", id: "notes.markup")
+                    accessory("bold", label: "Bold", id: "notes.bold")
                 }
-                .accessibilityLabel("Text case")
-
-                checklistButton.frame(width: 58)
-                Button { editor.insertLine("Column 1\tColumn 2\n") } label: {
-                    Image(systemName: "tablecells").frame(width: 56, height: 44)
-                }
-                .accessibilityLabel("Insert tabbed columns")
-                drawingSymbol.frame(width: 52)
-                Button { editor.textView?.undoManager?.undo() } label: {
-                    Image(systemName: "arrow.uturn.backward").frame(width: 48, height: 44)
-                }
-                .accessibilityLabel("Undo")
-                .disabled(!editor.canUndo)
+                .padding(.horizontal, 7)
             }
+            .scrollIndicators(.hidden)
+            .clipShape(Capsule())
+            .noteControlBackground(Capsule())
         }
-        .font(.system(size: 19))
-        .scrollIndicators(.hidden)
-        .frame(maxWidth: .infinity)
-        .frame(height: 44)
-        .noteControlBackground(Capsule())
-        .clipShape(Capsule())
+        .frame(height: 48)
     }
 
-    private var checklistButton: some View {
-        Button { editor.insertLine("☐ ") } label: {
-            Image(systemName: "checklist").frame(width: 44, height: 44)
+    private func accessory(_ symbol: String, label: String, id: String,
+                           width: CGFloat = 44, height: CGFloat = 48) -> some View {
+        Button(action: {}) {
+            Image(systemName: symbol)
+                .font(.system(size: 22))
+                .frame(width: width, height: height)
+                .contentShape(Rectangle())
         }
-        .accessibilityLabel("Insert checklist item")
+        .accessibilityLabel(Text(label))
+        .accessibilityIdentifier(id)
     }
+}
 
-    // This editor stores plain text. Drawings cannot be saved with a note.
-    private var drawingSymbol: some View {
-        Image(systemName: "pencil.tip.crop.circle")
-            .foregroundStyle(Color(white: 0.40))
-            .frame(width: 44, height: 44)
-            .accessibilityHidden(true)
+private struct NoteToolbarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.55 : 1)
     }
 }
 
 private extension View {
-    func noteControlBackground<S: InsettableShape>(_ shape: S) -> some View {
-        background(Color(white: 0.12), in: shape)
+    @ViewBuilder
+    func noteControlBackground<S: InsettableShape>(_ shape: S, tint: Color? = nil) -> some View {
+        #if compiler(>=6.2)
+        if #available(iOS 26.0, *) {
+            glassEffect(.regular.tint(tint).interactive(), in: shape)
+        } else {
+            noteFallbackBackground(shape, tint: tint)
+        }
+        #else
+        noteFallbackBackground(shape, tint: tint)
+        #endif
+    }
+
+    private func noteFallbackBackground<S: InsettableShape>(_ shape: S, tint: Color?) -> some View {
+        background(tint ?? Color(white: 0.12), in: shape)
             .overlay(shape.strokeBorder(
                 LinearGradient(colors: [Color.white.opacity(0.17), Color.white.opacity(0.04)],
                                startPoint: .topLeading, endPoint: .bottomTrailing),
                 lineWidth: 0.8
-            ))
+            ).allowsHitTesting(false))
     }
 }
 
