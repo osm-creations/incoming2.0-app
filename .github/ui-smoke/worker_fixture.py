@@ -14,7 +14,11 @@ configs = {account: dict(config) for account, config in INITIAL.items()}
 reads = set()
 writes = []
 violations = []
-sessions = {}
+sessions = {
+    "qa-alice-initial": ("alice", "unused-a"),
+    "qa-bob": ("bob", "unused-b"),
+    "qa-alice-return": ("alice", "unused-c"),
+}
 
 
 class Fixture(BaseHTTPRequestHandler):

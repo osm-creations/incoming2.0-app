@@ -15,6 +15,7 @@ targets:
       - path: ../../Sources/Incoming
         excludes: [Info.plist, Incoming.entitlements]
       - path: ../../Sources/Shared
+      - path: Host/FixtureSession.m
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.osmcreations.uitest.DashboardHost
