@@ -1,0 +1,62 @@
+name: Verify build 22 App Clip controls and capture review screens
+on:
+  push:
+    branches: ['verify/build22-final-clip']
+permissions:
+  contents: read
+jobs:
+  clip:
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: .github/clip-smoke
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start iPhone simulator
+        run: |
+          bash select-xcode.sh
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool NO
+          python3 choose-simulator.py standard
+          device="$(tail -2 "$GITHUB_ENV" | sed -n 's/^DEVICE=//p')"
+          xcrun simctl boot "$device"
+      - name: Prepare the App Clip fixture
+        run: |
+          curl -fsSL --retry 3 https://github.com/yonaskolb/XcodeGen/releases/download/2.44.1/xcodegen.zip -o "$RUNNER_TEMP/clip-xcodegen.zip"
+          echo "a2e905fb68446e9bb4008cdfe2e13e3f176d0cbcca828b71770f8e53fca91b73  $RUNNER_TEMP/clip-xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/clip-xcodegen.zip" -d "$RUNNER_TEMP/clip-tools"
+          "$RUNNER_TEMP/clip-tools/xcodegen/bin/xcodegen" generate
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl spawn "$DEVICE" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
+          xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
+      - name: Capture the note and the volume-triggered reveal
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true' EXIT
+          for i in {1..12}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project ClipSmoke.xcodeproj -scheme ClipHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Clip.xcresult test > test.log 2>&1 || { tail -150 test.log; tail -30 worker.log; exit 1; }
+          curl -fsS http://127.0.0.1:8743/verified > fixture-results.json
+          python3 -c 'import json; c=json.load(open("fixture-results.json"))["data"]; assert c.get("selection-plain-zero")==1 and c.get("selection-standard-legacy")==1 and c.get("selection-plain-missing",0)==0, c'
+          grep -E 'CUE-QA|Executed [0-9]+ tests|TEST SUCCEEDED' test.log
+      - name: Export screenshots
+        if: always()
+        run: |
+          if test -d Clip.xcresult; then xcrun xcresulttool export attachments --path Clip.xcresult --output-path captures; fi
+          echo "$SIM_MODEL" > device.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incoming22-clip-originals
+          path: |
+            .github/clip-smoke/captures
+            .github/clip-smoke/device.txt
+            .github/clip-smoke/build.log
+            .github/clip-smoke/test.log
+            .github/clip-smoke/worker.log
+            .github/clip-smoke/fixture-results.json
