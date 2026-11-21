@@ -1,0 +1,86 @@
+name: Capture review screenshots of the full app
+on:
+  push:
+    branches: ['verify/build22-main-capture']
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: macos-15
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: .github/main-smoke
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start iPhone simulator
+        run: |
+          bash select-xcode.sh
+          python3 choose-simulator.py standard
+          device="$(tail -2 "$GITHUB_ENV" | sed -n 's/^DEVICE=//p')"
+          xcrun simctl boot "$device"
+      - name: Build screenshot fixture against shipping sources
+        run: |
+          curl -fsSL --retry 3 https://github.com/yonaskolb/XcodeGen/releases/download/2.44.1/xcodegen.zip -o "$RUNNER_TEMP/xcodegen.zip"
+          cd "$RUNNER_TEMP"
+          echo 'a2e905fb68446e9bb4008cdfe2e13e3f176d0cbcca828b71770f8e53fca91b73  xcodegen.zip' | shasum -a 256 -c -
+          unzip -q xcodegen.zip
+          cd "$GITHUB_WORKSPACE/.github/main-smoke"
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiBars 3 --cellularBars 4 --batteryState discharging --batteryLevel 100
+      - name: Capture review screenshots
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true' EXIT
+          for i in {1..12}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project DashboardSmoke.xcodeproj -scheme IncomingHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Dashboard.xcresult test > test.log 2>&1 || { tail -100 test.log; exit 1; }
+      - name: Export original screenshots
+        if: always()
+        run: |
+          if test -d Dashboard.xcresult; then xcrun xcresulttool export attachments --path Dashboard.xcresult --output-path captures; fi
+          echo "$SIM_MODEL" > device.txt
+          xcrun simctl list devices -j | python3 -c 'import json, os, sys; print(next(key for key, devices in json.load(sys.stdin)["devices"].items() if any(d["udid"] == os.environ["DEVICE"] for d in devices)))' > runtime.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incoming22-main-originals
+          path: |
+            .github/main-smoke/captures
+            .github/main-smoke/device.txt
+            .github/main-smoke/runtime.txt
+            .github/main-smoke/test.log
+            .github/main-smoke/worker.log
+  shipping:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Select native Xcode
+        run: bash .github/main-smoke/select-xcode.sh
+      - name: Compile iPhone Release and verify the App Clip embedded in build 22
+        run: |
+          set -euo pipefail
+          xcodebuild -workspace Incoming2.xcworkspace -scheme Incoming2 -configuration Release \
+            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO \
+            -derivedDataPath ReleaseDerived build > release.log 2>&1 \
+            || { tail -100 release.log; exit 1; }
+          main=ReleaseDerived/Build/Products/Release-iphoneos/Incoming2.app
+          for plist in "$main/Info.plist" "$main/AppClips/IncomingClip.app/Info.plist"; do
+            test "$(plutil -extract CFBundleVersion raw "$plist")" = 22
+            test "$(plutil -extract CFBundleShortVersionString raw "$plist")" = 2.0.0
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incoming22-release-log
+          path: release.log
+
