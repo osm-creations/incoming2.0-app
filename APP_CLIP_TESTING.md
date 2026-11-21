@@ -7,7 +7,7 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 | Check | Expected result |
 |---|---|
 | Open with a blank Inject User ID | Standard Notes shows Rose. Holding the checklist leaves the note open. |
-| Edit the note on an iPhone, triple-tap it, then press a volume button that changes the media volume | The screen turns black on the triple-tap, stays black for the saved delay after the volume change, then shows the saved caller Alex. Sliding to answer returns to the edited note after Call Failed. |
+| Edit the note on an iPhone, double-tap it, then press Volume Up | The screen turns black with one vibration, waits for the saved delay after Volume Up, then shows the saved caller Alex. Sliding to answer returns to the edited note after Call Failed. |
 | While editing, tap Aa, edit the first nonempty line to Jamie, and perform | The call shows Jamie. With Aa switched off, the previous caller name applies again. |
 | Save your Inject User ID in Settings, update the Inject selection, and relaunch the Clip | Holding the checklist previews the current selection with the keyboard open or closed. Holding Share leaves the note open. |
 | Choose Close, then perform | The caller is still Alex. |
@@ -18,9 +18,20 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 
 In the main app, open **Dashboard → Notes Input**. Change the caller name from Alex to Jamie and save. The name should stay in the editor with no confirmation footer. Reopen Notes Input to verify Jamie was saved. Open the same App Clip link again and perform without selecting an Inject value. The note should show Rose and the reveal should show Jamie.
 
-Use a physical iPhone with haptics enabled. Triple-tap inside the note to go black, then press either volume button once. At maximum volume press Volume Down, and at minimum press Volume Up. Each accepted step gives one haptic pulse. Additional presses during the countdown do not restart it. Tapping the black screen leaves it waiting.
+Use a physical iPhone with haptics enabled. Start with media volume near the middle. The Clip listens for changes in output volume. At maximum volume, press Volume Down before starting with Volume Up. Buttons retain their normal volume behavior. The Clip draws no volume bar or countdown digits. iOS may show its transient system volume indicator.
 
-Save delays of 0, 5, and 60 seconds in the performer app, reopening the same App Clip link after each save. Check for an immediate reveal at 0 and the selected wait at 5 and 60. Move the Clip to the background during a countdown. On returning to the black screen, a fresh volume change must be required. To check NFC, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
+With a five-second delay, run each of these checks with both demo accounts.
+
+| Action on the black screen | Expected result |
+|---|---|
+| Press Volume Down before starting, then wait six seconds | The screen stays black. |
+| Press Volume Up, wait two seconds, then press Volume Down and wait six seconds | The countdown is canceled. Pressing Volume Up starts all five seconds again. |
+| Press Volume Up, wait two seconds, and press Volume Up again | The reveal occurs five seconds after the last press. |
+| Swipe down with two fingers before or during the countdown | One vibration, then the same edited note reopens. Any pending reveal is canceled. |
+| Tap once or swipe down with one finger | The screen stays black. |
+| Move the Clip to the background mid-countdown, then return | The Clip waits for a fresh Volume Up. |
+
+Save delays of 0 and 60 seconds in the performer app and reopen the same App Clip link after each save. At 0, Volume Up reveals immediately. At 60, wait the full minute. To check NFC, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
 
 ## Test account-specific presentations and settings
 
@@ -28,7 +39,7 @@ Use two test accounts. In the server's `wrangler.toml`, `PLAIN_PRESENTATION_ACCO
 
 1. Sign in as `105`, save a note and caller name, and copy its App Clip link. Repeat with a second performer account, using a different note and caller name. If testing Inject, give each account its own Inject ID and set a distinct selection in each provider account.
 2. Open each link on the same iPhone in turn. Each note and caller name should match the performer who created the link. With Inject enabled, use **Get caller name** in plain Notes or hold the **checklist** in standard Notes to check that performer's selection. Tap **Tools → Use note as caller name** in plain Notes or **Aa** while editing in standard Notes to use that note’s first nonempty line.
-3. Triple-tap the note, press either volume button to change the media volume, and wait for that performer’s saved delay. The link for `105` shows a black name on white. Tap to return. The other link shows the standard simulated incoming call.
+3. Double-tap the note, press Volume Up, and wait for that performer’s saved delay. The link for `105` shows a black name on white. Tap to return. The other link shows the standard simulated incoming call.
 4. Clear the caller name or Inject ID on one account, save, and reopen both links. The other account should retain its own settings.
 
 For App Review, provide a test login and complete App Clip link for each presentation. Include the gestures above in Notes for Review so the reviewer can reproduce both flows.

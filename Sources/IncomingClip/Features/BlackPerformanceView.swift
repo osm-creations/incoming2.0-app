@@ -13,7 +13,7 @@ struct BlackPerformanceView: View {
     @StateObject private var trigger = VolumeRevealTrigger()
 
     var body: some View {
-        Color.black
+        BlackGestureSurface(onReturn: returnToNote)
             .ignoresSafeArea()
             .statusBarHidden(true)
             .persistentSystemOverlays(.hidden)
@@ -26,10 +26,49 @@ struct BlackPerformanceView: View {
             }
             .onDisappear { trigger.cancel() }
             .alert("Volume trigger unavailable", isPresented: $trigger.activationFailed) {
-                Button("Return to note", action: onReturnToNote)
+                Button("Return to note", action: returnToNote)
             } message: {
                 Text("The iPhone’s audio session could not be opened. Return to the note and try again.")
             }
+    }
+
+    private func returnToNote() {
+        trigger.cancel()
+        onReturnToNote()
+    }
+}
+
+private struct BlackGestureSurface: UIViewRepresentable {
+    let onReturn: () -> Void
+
+    func makeUIView(context: Context) -> Surface {
+        let view = Surface()
+        view.backgroundColor = .black
+        view.isMultipleTouchEnabled = true
+        view.isAccessibilityElement = true
+        view.accessibilityIdentifier = "performance.blackScreen"
+        view.accessibilityLabel = "Black screen"
+        view.accessibilityHint = "Use the escape gesture to return to the note."
+        let swipe = UISwipeGestureRecognizer(target: view, action: #selector(Surface.swipedDown))
+        swipe.numberOfTouchesRequired = 2
+        swipe.direction = .down
+        view.addGestureRecognizer(swipe)
+        return view
+    }
+
+    func updateUIView(_ view: Surface, context: Context) {
+        view.onReturn = onReturn
+    }
+
+    final class Surface: UIView {
+        var onReturn: (() -> Void)?
+
+        @objc func swipedDown() { onReturn?() }
+
+        override func accessibilityPerformEscape() -> Bool {
+            onReturn?()
+            return true
+        }
     }
 }
 
@@ -44,7 +83,7 @@ private final class VolumeRevealTrigger: ObservableObject {
     private var previousIdleTimerSetting: Bool?
 
     func arm(delaySeconds: Int, onReveal: @escaping () -> Void) {
-        guard observation == nil, countdown == nil else { return }
+        guard observation == nil else { return }
         do {
             // Ambient audio mixes with other apps. We never play audio or set the user's volume.
             try audio.setCategory(.ambient)
@@ -55,12 +94,14 @@ private final class VolumeRevealTrigger: ObservableObject {
         }
 
         activationFailed = false
+        previousIdleTimerSetting = UIApplication.shared.isIdleTimerDisabled
+        UIApplication.shared.isIdleTimerDisabled = true
         let id = UUID()
         armedID = id
-        var previousVolume = audio.outputVolume
+        var previousVolume: Float?
         var previousOutputs = audio.currentRoute.outputs.map(\.uid)
         var routeChangeTime: ContinuousClock.Instant?
-        let volumeChanges = audio.publisher(for: \.outputVolume, options: [.new]).map { Optional($0) }
+        let volumeChanges = audio.publisher(for: \.outputVolume, options: [.initial, .new]).map { Optional($0) }
         let routeChanges = NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification, object: audio)
             .map { _ in Optional<Float>.none }
 
@@ -70,31 +111,34 @@ private final class VolumeRevealTrigger: ObservableObject {
                 guard let self, armedID == id, UIApplication.shared.applicationState == .active else { return }
                 let outputs = audio.currentRoute.outputs.map(\.uid)
                 if previousOutputs != outputs {
-                    // Switching between the speaker and headphones can change volume without a press.
+                    // A new output may have a different volume without a button press.
                     previousOutputs = outputs
                     previousVolume = audio.outputVolume
                     routeChangeTime = .now
+                    cancelCountdown()
                     return
                 }
-                guard let value, value != previousVolume else { return }
+                guard let value else { return }
+                let last = previousVolume
                 previousVolume = value
+                guard let last, value != last else { return }
                 if let routeChangeTime, routeChangeTime.duration(to: .now) < .milliseconds(400) { return }
-                scheduleReveal(after: delaySeconds, onReveal: onReveal)
+                if value > last {
+                    scheduleReveal(after: delaySeconds, onReveal: onReveal)
+                } else {
+                    cancelCountdown()
+                }
             }
     }
 
     func cancel() {
         stopListening()
-        countdown?.cancel()
-        countdown = nil
-        restoreIdleTimer()
+        cancelCountdown()
     }
 
-    private func restoreIdleTimer() {
-        if let previousIdleTimerSetting {
-            UIApplication.shared.isIdleTimerDisabled = previousIdleTimerSetting
-            self.previousIdleTimerSetting = nil
-        }
+    private func cancelCountdown() {
+        countdown?.cancel()
+        countdown = nil
     }
 
     private func stopListening() {
@@ -103,17 +147,21 @@ private final class VolumeRevealTrigger: ObservableObject {
         observation.cancel()
         self.observation = nil
         try? audio.setActive(false)
+        if let previousIdleTimerSetting {
+            UIApplication.shared.isIdleTimerDisabled = previousIdleTimerSetting
+            self.previousIdleTimerSetting = nil
+        }
     }
 
     private func scheduleReveal(after seconds: Int, onReveal: @escaping () -> Void) {
-        stopListening()
+        // Keep observing until the reveal so down can cancel and up can restart.
+        countdown?.cancel()
         CallEffectsController.confirmCue()
         if seconds == 0 {
+            cancel()
             onReveal()
             return
         }
-        previousIdleTimerSetting = UIApplication.shared.isIdleTimerDisabled
-        UIApplication.shared.isIdleTimerDisabled = true
         countdown = Task { @MainActor in
             do {
                 try await Task.sleep(for: .seconds(seconds))
@@ -122,7 +170,7 @@ private final class VolumeRevealTrigger: ObservableObject {
             }
             guard !Task.isCancelled else { return }
             countdown = nil
-            restoreIdleTimer()
+            stopListening()
             guard UIApplication.shared.applicationState == .active else { return }
             onReveal()
         }

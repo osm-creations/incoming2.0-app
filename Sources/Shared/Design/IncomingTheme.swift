@@ -76,7 +76,7 @@ struct IncomingNotesView: View {
     let showsSave: Bool
     let onBack: (() -> Void)?
     let onSave: ((String) -> Void)?
-    let onTripleTap: ((String) -> Void)?
+    let onDoubleTap: ((String) -> Void)?
     let usesNoteAsCallerName: Binding<Bool>?
     let onGetCallerName: (() -> Void)?
     let isFetchingCallerName: Bool
@@ -92,7 +92,7 @@ struct IncomingNotesView: View {
         showsSave: Bool = false,
         onBack: (() -> Void)? = nil,
         onSave: ((String) -> Void)? = nil,
-        onTripleTap: ((String) -> Void)? = nil,
+        onDoubleTap: ((String) -> Void)? = nil,
         usesNoteAsCallerName: Binding<Bool>? = nil,
         onGetCallerName: (() -> Void)? = nil,
         isFetchingCallerName: Bool = false,
@@ -102,7 +102,7 @@ struct IncomingNotesView: View {
         self.showsSave = showsSave
         self.onBack = onBack
         self.onSave = onSave
-        self.onTripleTap = onTripleTap
+        self.onDoubleTap = onDoubleTap
         self.usesNoteAsCallerName = usesNoteAsCallerName
         self.onGetCallerName = onGetCallerName
         self.isFetchingCallerName = isFetchingCallerName
@@ -135,9 +135,9 @@ struct IncomingNotesView: View {
                 .foregroundStyle(Color(white: 0.56))
                 .padding(.top, 9)
 
-            IncomingTripleTapTextView(
+            IncomingNoteTextView(
                 text: $noteText, editor: editor,
-                onTripleTap: onTripleTap
+                onDoubleTap: onDoubleTap
             )
             .padding(.horizontal, 28)
             .padding(.top, 5)
@@ -182,9 +182,9 @@ struct IncomingNotesView: View {
                     Button(showsSave ? "Save" : "Done", action: finishEditing)
                 }
             }
-            IncomingTripleTapTextView(
+            IncomingNoteTextView(
                 text: $noteText, editor: editor,
-                onTripleTap: onTripleTap,
+                onDoubleTap: onDoubleTap,
                 isPlain: true
             )
             .padding(12)
@@ -426,10 +426,10 @@ private final class NoteEditorController: ObservableObject {
 }
 
 @MainActor
-private struct IncomingTripleTapTextView: UIViewRepresentable {
+private struct IncomingNoteTextView: UIViewRepresentable {
     @Binding var text: String
     let editor: NoteEditorController
-    let onTripleTap: ((String) -> Void)?
+    let onDoubleTap: ((String) -> Void)?
     var isPlain = false
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -451,21 +451,21 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
         textView.textContainerInset = UIEdgeInsets(top: 2, left: 0, bottom: 18, right: 0)
         textView.textContainer.lineFragmentPadding = 0
 
-        if onTripleTap != nil {
-            let triple = NoteTapRecognizer(target: context.coordinator,
-                                           action: #selector(Coordinator.handleTripleTap(_:)))
-            triple.numberOfTapsRequired = 3
-            triple.delaysTouchesBegan = true
-            triple.delegate = context.coordinator
-            textView.addGestureRecognizer(triple)
+        if onDoubleTap != nil {
+            let performance = NoteTapRecognizer(target: context.coordinator,
+                                                action: #selector(Coordinator.handleDoubleTap(_:)))
+            performance.numberOfTapsRequired = 2
+            performance.delaysTouchesBegan = true
+            performance.delegate = context.coordinator
+            textView.addGestureRecognizer(performance)
 
             let single = NoteTapRecognizer(target: context.coordinator,
                                            action: #selector(Coordinator.handleReadingTap(_:)))
-            single.require(toFail: triple)
+            single.require(toFail: performance)
             single.delegate = context.coordinator
             textView.addGestureRecognizer(single)
             context.coordinator.readingTap = single
-            context.coordinator.performanceTap = triple
+            context.coordinator.performanceTap = performance
         }
         return textView
     }
@@ -480,16 +480,16 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
 
     @MainActor
     final class Coordinator: NSObject, UITextViewDelegate, UIGestureRecognizerDelegate {
-        var parent: IncomingTripleTapTextView
+        var parent: IncomingNoteTextView
         weak var readingTap: UITapGestureRecognizer?
         weak var performanceTap: UITapGestureRecognizer?
 
-        init(_ parent: IncomingTripleTapTextView) {
+        init(_ parent: IncomingNoteTextView) {
             self.parent = parent
         }
 
         func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
-            parent.onTripleTap == nil || parent.editor.isActivatingEditor || UIAccessibility.isVoiceOverRunning
+            parent.onDoubleTap == nil || parent.editor.isActivatingEditor || UIAccessibility.isVoiceOverRunning
         }
 
         func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
@@ -539,10 +539,10 @@ private struct IncomingTripleTapTextView: UIViewRepresentable {
                                          .foregroundColor: UIColor.white]
         }
 
-        @objc func handleTripleTap(_ recognizer: UITapGestureRecognizer) {
+        @objc func handleDoubleTap(_ recognizer: UITapGestureRecognizer) {
             guard recognizer.state == .ended, let textView = recognizer.view as? UITextView else { return }
             textView.resignFirstResponder()
-            parent.onTripleTap?(textView.text)
+            parent.onDoubleTap?(textView.text)
         }
     }
 }

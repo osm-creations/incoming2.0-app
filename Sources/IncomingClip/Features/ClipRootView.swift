@@ -24,7 +24,7 @@ struct ClipRootView: View {
                     canFetchSelection: coordinator.hasInjectUserId,
                     fetchSelection: { try await coordinator.fetchSelection(session: session) },
                     onUseSelection: { coordinator.useSelection($0, session: session) },
-                    onTripleTap: { updatedText in
+                    onDoubleTap: { updatedText in
                         coordinator.enterBlack(text: updatedText, session: session)
                     },
                     usesPlainPresentation: coordinator.usesPlainPresentation

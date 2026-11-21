@@ -6,7 +6,7 @@ struct NotesReplicaView: View {
     let canFetchSelection: Bool
     let fetchSelection: () async throws -> String
     let onUseSelection: (String) -> Void
-    let onTripleTap: (String) -> Void
+    let onDoubleTap: (String) -> Void
     let usesPlainPresentation: Bool
 
     private enum LookupDialog {
@@ -27,7 +27,7 @@ struct NotesReplicaView: View {
     var body: some View {
         IncomingNotesView(
             initialText: initialText,
-            onTripleTap: onTripleTap,
+            onDoubleTap: onDoubleTap,
             usesNoteAsCallerName: $usesNoteAsCallerName,
             onGetCallerName: canFetchSelection ? { isLookingUp = true } : nil,
             isFetchingCallerName: isLookingUp,

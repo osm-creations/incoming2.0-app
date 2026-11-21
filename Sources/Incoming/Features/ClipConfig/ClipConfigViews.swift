@@ -315,7 +315,7 @@ struct NotesInputView: View {
                     showsSave: true,
                     onBack: { dismiss() },
                     onSave: save,
-                    onTripleTap: nil,
+                    onDoubleTap: nil,
                     showsSystemShare: hasInjectUserId,
                     usesPlainPresentation: usesPlainPresentation
                 )

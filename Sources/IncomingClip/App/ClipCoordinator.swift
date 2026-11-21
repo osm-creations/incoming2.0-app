@@ -112,6 +112,7 @@ final class ClipCoordinator: ObservableObject {
 
     func returnToNote(text: String, session: ClipSession) {
         guard case .black(_, let active) = state, active.id == session.id else { return }
+        CallEffectsController.confirmCue()
         state = .notes(text: text, session: session)
     }
 
