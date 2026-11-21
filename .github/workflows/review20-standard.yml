@@ -1,0 +1,56 @@
+name: Capture standard App Clip note and simulated call
+on:
+  push:
+    branches: ['verify/build20-standard-review']
+permissions:
+  contents: read
+jobs:
+  clip:
+    runs-on: macos-15
+    timeout-minutes: 35
+    defaults:
+      run:
+        working-directory: .github/clip-smoke
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Start iPhone simulator
+        run: |
+          bash select-xcode.sh
+          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool NO
+          python3 choose-simulator.py standard
+          device="$(tail -2 "$GITHUB_ENV" | sed -n 's/^DEVICE=//p')"
+          xcrun simctl boot "$device"
+      - name: Prepare the App Clip fixture
+        run: |
+          if ! command -v xcodegen >/dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi
+          xcodegen generate
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl spawn "$DEVICE" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
+          xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
+      - name: Capture the note and the volume-triggered reveal
+        run: |
+          set -euo pipefail
+          python3 -u worker_fixture.py > worker.log 2>&1 &
+          fixture_pid=$!
+          trap 'kill "$fixture_pid" || true' EXIT
+          for i in {1..12}; do curl -fsS http://127.0.0.1:8743/ready && break; sleep 1; done
+          xcodebuild -project ClipSmoke.xcodeproj -scheme ClipHost -configuration Debug \
+            -destination "platform=iOS Simulator,id=$DEVICE" -parallel-testing-enabled NO \
+            -resultBundlePath Clip.xcresult test > test.log 2>&1 || { tail -150 test.log; tail -30 worker.log; exit 1; }
+          grep -E 'VOLUME-QA|Executed [0-9]+ tests|TEST SUCCEEDED' test.log
+      - name: Export screenshots
+        if: always()
+        run: |
+          if test -d Clip.xcresult; then xcrun xcresulttool export attachments --path Clip.xcresult --output-path captures; fi
+          echo "$SIM_MODEL" > device.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: incoming20-standard-originals
+          path: |
+            .github/clip-smoke/captures
+            .github/clip-smoke/device.txt
+            .github/clip-smoke/test.log
+            .github/clip-smoke/worker.log
