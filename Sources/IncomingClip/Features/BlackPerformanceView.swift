@@ -2,6 +2,9 @@ import AVFAudio
 import Combine
 import SwiftUI
 import UIKit
+#if canImport(MediaPlayer)
+import MediaPlayer
+#endif
 
 @MainActor
 struct BlackPerformanceView: View {
@@ -73,12 +76,49 @@ private struct BlackGestureSurface: UIViewRepresentable {
         swipe.numberOfTouchesRequired = 2
         swipe.direction = .down
         view.addGestureRecognizer(swipe)
+        #if canImport(MediaPlayer)
+        installVolumeView(in: view)
+        #endif
         return view
     }
 
     func updateUIView(_ view: Surface, context: Context) {
         view.onReturn = onReturn
     }
+
+    #if canImport(MediaPlayer)
+    private func installVolumeView(in surface: Surface) {
+        // Device experiment: keep the native slider in the black screen's window.
+        // The hardware cues and charcoal meter use AVAudioSession independently.
+        let size = CGSize(width: 128, height: 28)
+        let volumeView = MPVolumeView(frame: CGRect(origin: .zero, size: size))
+        volumeView.translatesAutoresizingMaskIntoConstraints = false
+        volumeView.showsVolumeSlider = true
+        volumeView.showsRouteButton = false
+        volumeView.backgroundColor = .black
+        volumeView.isUserInteractionEnabled = false
+        volumeView.isAccessibilityElement = false
+        volumeView.accessibilityElementsHidden = true
+        volumeView.accessibilityIdentifier = "performance.systemVolumeView"
+
+        let imageBounds = CGRect(x: 0, y: 0, width: 16, height: 16)
+        let blackImage = UIGraphicsImageRenderer(size: imageBounds.size).image { context in
+            UIColor.black.setFill()
+            context.fill(imageBounds)
+        }.withRenderingMode(.alwaysOriginal)
+        let track = blackImage.resizableImage(withCapInsets: .zero)
+        volumeView.setMinimumVolumeSliderImage(track, for: .normal)
+        volumeView.setMaximumVolumeSliderImage(track, for: .normal)
+        volumeView.setVolumeThumbImage(blackImage, for: .normal)
+        surface.addSubview(volumeView)
+        NSLayoutConstraint.activate([
+            volumeView.widthAnchor.constraint(equalToConstant: size.width),
+            volumeView.heightAnchor.constraint(equalToConstant: size.height),
+            volumeView.centerXAnchor.constraint(equalTo: surface.safeAreaLayoutGuide.centerXAnchor),
+            volumeView.bottomAnchor.constraint(equalTo: surface.safeAreaLayoutGuide.bottomAnchor, constant: -24)
+        ])
+    }
+    #endif
 
     final class Surface: UIView {
         var onReturn: (() -> Void)?

@@ -33,6 +33,12 @@ With a five-second delay, run each of these checks with both demo accounts.
 
 Save delays of 0 and 60 seconds in the performer app and reopen the same App Clip link after each save. At 0, Volume Up reveals immediately. At 60, wait the full minute. To check NFC, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
 
+## Physical volume indicator comparison for build 23
+
+Use the same iPhone, iOS version, output route, and saved delay for builds 22 and 23. Launch the actual App Clip each time. With volume near the middle, double-tap the note, press Volume Up and then Volume Down before the delay expires. Compare whether the iOS volume indicator appears alongside the charcoal meter. Repeat after returning to the note and entering black again. Record the Clip build, device model, iOS version, output route, and what appeared for each press.
+
+Build 23 places a noninteractive 128 × 28 pt MPVolumeView in the black screen’s view hierarchy. Its normal opacity and black track and thumb keep the native slider on screen and visually blend it into the background. Leaving black removes the view. The app never sets the device volume. Apple documents [Media Player’s App Clip limitations](https://developer.apple.com/documentation/appclip/choosing-the-right-functionality-for-your-app-clip). The effect on the iOS indicator requires testing on a physical iPhone.
+
 ## Test account-specific presentations and settings
 
 Use two test accounts. In the server's `wrangler.toml`, `PLAIN_PRESENTATION_ACCOUNT` selects the plain editor and name reveal. It is currently set to public User ID `105`.

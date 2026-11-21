@@ -17,6 +17,6 @@ With Inject enabled, press and hold the **checklist** icon next to **Aa** to pre
 
 Double-tap inside the note to enter the black screen. Swipe down with two fingers to cancel and return to the same note. Each transition gives one vibration on supported iPhones. On the black screen, press Volume Up to start the saved countdown. Pressing Volume Up again restarts the full delay. Volume Down cancels the countdown and leaves the screen black, ready for another Volume Up. A delay of 0 reveals immediately on Volume Up. Slide to answer the simulated call, or tap the name in the plain presentation, to return to the note.
 
-Start with media volume near the middle so both buttons can change it. If already at maximum, press Volume Down before Volume Up. A slim charcoal meter at the left of the black screen briefly shows the new media volume after each change. It fades after 1.2 seconds. iOS controls its own volume indicator and may display it as well.
+Start with media volume near the middle so both buttons can change it. If already at maximum, press Volume Down before Volume Up. A slim charcoal meter at the left of the black screen briefly shows the new media volume after each change. It fades after 1.2 seconds. iOS controls its own volume indicator and may display it as well. Build 23 mounts a black-on-black native volume view during the black screen to test how iOS handles that indicator on a physical device.
 
 See [App Clip testing](APP_CLIP_TESTING.md) for the simulator and device checks.
