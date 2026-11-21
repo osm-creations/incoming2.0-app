@@ -13,10 +13,10 @@ Open `Incoming2.xcworkspace` in Xcode. The shared schemes are `Incoming2` for th
 
 The Clip opens to an editable note. Tap **Aa** while editing to use the first nonempty line of the note as the caller name. Further edits to that line carry through to the reveal. Tap **Aa** again to return to the previous name. In plain Notes, use **Tools → Use note as caller name**.
 
-With Inject enabled, press and hold the **checklist** icon next to **Aa** to preview the current Inject selection. The same checklist works with the keyboard closed. In plain Notes, tap **Get caller name**. **Use** selects the Inject name for this performance. **Close** preserves the current caller-name choice. These choices apply only to the active App Clip session.
+With Inject enabled, press and hold the **checklist** icon next to **Aa** to preview the current Inject selection. The same checklist works with the keyboard closed. In plain Notes, choose **Tools → Inject** or tap **Get caller name**. If no Inject User ID is saved, **Tools → Inject** explains where to add it. **Use** selects the Inject name for this performance. **Close** preserves the current caller-name choice. These choices apply only to the active App Clip session.
 
 Double-tap inside the note to enter the black screen. Swipe down with two fingers to cancel and return to the same note. Each transition gives one vibration on supported iPhones. On the black screen, press Volume Up to start the saved countdown. Pressing Volume Up again restarts the full delay. Volume Down cancels the countdown and leaves the screen black, ready for another Volume Up. A delay of 0 reveals immediately on Volume Up. Slide to answer the simulated call, or tap the name in the plain presentation, to return to the note.
 
-Start with media volume near the middle so both buttons can change it. If already at maximum, press Volume Down before Volume Up. iOS controls its transient volume indicator and may display it over the black screen.
+Start with media volume near the middle so both buttons can change it. If already at maximum, press Volume Down before Volume Up. A slim charcoal meter at the left of the black screen briefly shows the new media volume after each change. It fades after 1.2 seconds. iOS controls its own volume indicator and may display it as well.
 
 See [App Clip testing](APP_CLIP_TESTING.md) for the simulator and device checks.

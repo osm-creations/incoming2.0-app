@@ -13,23 +13,43 @@ struct BlackPerformanceView: View {
     @StateObject private var trigger = VolumeRevealTrigger()
 
     var body: some View {
-        BlackGestureSurface(onReturn: returnToNote)
-            .ignoresSafeArea()
-            .statusBarHidden(true)
-            .persistentSystemOverlays(.hidden)
-            .onChange(of: scenePhase, initial: true) { _, phase in
-                if phase == .active {
-                    trigger.arm(delaySeconds: delaySeconds, onReveal: onReveal)
-                } else {
-                    trigger.cancel()
+        ZStack(alignment: .leading) {
+            BlackGestureSurface(onReturn: returnToNote)
+                .ignoresSafeArea()
+            if let volume = trigger.meterVolume {
+                GeometryReader { bounds in
+                    ZStack(alignment: .bottom) {
+                        Capsule().fill(Color(white: 0.12))
+                        Capsule().fill(Color(white: 0.32))
+                            .frame(height: bounds.size.height * CGFloat(volume))
+                    }
                 }
+                .frame(width: 6, height: 96)
+                .padding(.leading, 14)
+                .allowsHitTesting(false)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("Media volume")
+                .accessibilityValue(Text("\(Int((volume * 100).rounded())) percent"))
+                .accessibilityIdentifier("performance.volumeMeter")
+                .transition(.opacity)
             }
-            .onDisappear { trigger.cancel() }
-            .alert("Volume trigger unavailable", isPresented: $trigger.activationFailed) {
-                Button("Return to note", action: returnToNote)
-            } message: {
-                Text("The iPhone’s audio session could not be opened. Return to the note and try again.")
+        }
+        .animation(.easeOut(duration: 0.15), value: trigger.meterVolume != nil)
+        .statusBarHidden(true)
+        .persistentSystemOverlays(.hidden)
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            if phase == .active {
+                trigger.arm(delaySeconds: delaySeconds, onReveal: onReveal)
+            } else {
+                trigger.cancel()
             }
+        }
+        .onDisappear { trigger.cancel() }
+        .alert("Volume trigger unavailable", isPresented: $trigger.activationFailed) {
+            Button("Return to note", action: returnToNote)
+        } message: {
+            Text("The iPhone’s audio session could not be opened. Return to the note and try again.")
+        }
     }
 
     private func returnToNote() {
@@ -75,10 +95,12 @@ private struct BlackGestureSurface: UIViewRepresentable {
 @MainActor
 private final class VolumeRevealTrigger: ObservableObject {
     @Published var activationFailed = false
+    @Published private(set) var meterVolume: Float?
 
     private let audio = AVAudioSession.sharedInstance()
     private var observation: AnyCancellable?
     private var countdown: Task<Void, Never>?
+    private var meterDismissal: Task<Void, Never>?
     private var armedID: UUID?
     private var previousIdleTimerSetting: Bool?
 
@@ -115,6 +137,7 @@ private final class VolumeRevealTrigger: ObservableObject {
                     previousOutputs = outputs
                     previousVolume = audio.outputVolume
                     routeChangeTime = .now
+                    hideMeter()
                     cancelCountdown()
                     return
                 }
@@ -123,6 +146,7 @@ private final class VolumeRevealTrigger: ObservableObject {
                 previousVolume = value
                 guard let last, value != last else { return }
                 if let routeChangeTime, routeChangeTime.duration(to: .now) < .milliseconds(400) { return }
+                showMeter(at: value)
                 if value > last {
                     scheduleReveal(after: delaySeconds, onReveal: onReveal)
                 } else {
@@ -141,7 +165,28 @@ private final class VolumeRevealTrigger: ObservableObject {
         countdown = nil
     }
 
+    private func showMeter(at volume: Float) {
+        meterDismissal?.cancel()
+        meterVolume = min(max(volume, 0), 1)
+        meterDismissal = Task { @MainActor in
+            do {
+                try await Task.sleep(for: .milliseconds(1200))
+            } catch {
+                return
+            }
+            meterVolume = nil
+            meterDismissal = nil
+        }
+    }
+
+    private func hideMeter() {
+        meterDismissal?.cancel()
+        meterDismissal = nil
+        meterVolume = nil
+    }
+
     private func stopListening() {
+        hideMeter()
         guard let observation else { return }
         armedID = nil
         observation.cancel()
