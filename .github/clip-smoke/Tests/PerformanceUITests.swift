@@ -4,7 +4,9 @@ import XCTest
 final class PerformanceUITests: XCTestCase {
     let app = XCUIApplication()
     var note: XCUIElement { app.textViews.firstMatch }
-    var caller: XCUIElement { app.staticTexts["Jamie Rose"] }
+    var caller: XCUIElement {
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Jamie Rose")).firstMatch
+    }
 
     private func open(_ scenario: String) {
         continueAfterFailure = false
@@ -121,7 +123,7 @@ final class PerformanceUITests: XCTestCase {
         popup.buttons["Use"].tap()
         arm()
         setVolume("high")
-        XCTAssertTrue(app.staticTexts["Taylor Anderson"].waitForExistence(timeout: 4))
+        XCTAssertTrue(app.buttons["Taylor Anderson"].waitForExistence(timeout: 4))
         XCTAssertFalse(caller.exists)
         app.terminate()
         open("missing")
