@@ -22,10 +22,12 @@ final class ClipCoordinator: ObservableObject {
     private var selectedName: String?
     private var usesLegacyNoteName = false
     private var currentInvocation = UUID()
+    private var lastStatusUpdate: Task<Void, Never>?
 
     func handle(url: URL) async {
         let requestId = UUID()
         currentInvocation = requestId
+        lastStatusUpdate = nil
         revealDelaySeconds = RevealDelay.defaultSeconds
         configuredName = nil
         selectedName = nil
@@ -100,20 +102,14 @@ final class ClipCoordinator: ObservableObject {
         guard case .notes(_, let active) = state, active.id == session.id else { return }
         CallEffectsController.confirmCue()
         state = .black(text: text, session: session)
-        Task {
-            let _: StatusData? = try? await APIClient.shared.request(
-                "/api/v1/app-clip/sessions/\(session.id)/status",
-                method: "PATCH",
-                body: AnyEncodable(ClipStatusRequest(status: "BLACK_WAITING")),
-                clipToken: session.token
-            )
-        }
+        reportStatus("BLACK_WAITING", session: session)
     }
 
     func returnToNote(text: String, session: ClipSession) {
         guard case .black(_, let active) = state, active.id == session.id else { return }
         CallEffectsController.confirmCue()
         state = .notes(text: text, session: session)
+        reportStatus("NOTES", session: session)
     }
 
     func reveal(text: String, session: ClipSession) {
@@ -124,6 +120,21 @@ final class ClipCoordinator: ObservableObject {
     func finishCall(text: String, session: ClipSession) {
         guard case .call(_, let active) = state, active.id == session.id else { return }
         state = .notes(text: text, session: session)
+        reportStatus("NOTES", session: session)
+    }
+
+    private func reportStatus(_ status: String, session: ClipSession) {
+        // A quick return and re-entry must reach the server in the same order as the gestures.
+        let previous = lastStatusUpdate
+        lastStatusUpdate = Task {
+            await previous?.value
+            let _: StatusData? = try? await APIClient.shared.request(
+                "/api/v1/app-clip/sessions/\(session.id)/status",
+                method: "PATCH",
+                body: AnyEncodable(ClipStatusRequest(status: status)),
+                clipToken: session.token
+            )
+        }
     }
 
     func callerName(from text: String) -> String {

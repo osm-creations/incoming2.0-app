@@ -85,6 +85,7 @@ struct IncomingNotesView: View {
 
     @State private var noteText: String
     @State private var openedAt = Date()
+    @State private var showsInjectSetup = false
     @StateObject private var editor = NoteEditorController()
 
     init(
@@ -169,6 +170,15 @@ struct IncomingNotesView: View {
                     if let usesNoteAsCallerName {
                         Toggle("Use note as caller name", isOn: usesNoteAsCallerName)
                             .accessibilityIdentifier("notes.useNoteAsCallerName")
+                        Button("Inject") {
+                            if let onGetCallerName {
+                                onGetCallerName()
+                            } else {
+                                showsInjectSetup = true
+                            }
+                        }
+                        .disabled(isFetchingCallerName)
+                        .accessibilityIdentifier("notes.tools.inject")
                     }
                     Button("Copy note") { UIPasteboard.general.string = noteText }
                         .disabled(noteText.isEmpty)
@@ -177,6 +187,11 @@ struct IncomingNotesView: View {
                     Button("Uppercase") { editor.changeCase(uppercase: true) }
                     Button("Lowercase") { editor.changeCase(uppercase: false) }
                     Button("Undo") { editor.textView?.undoManager?.undo() }.disabled(!editor.canUndo)
+                }
+                .alert("Set up Inject", isPresented: $showsInjectSetup) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("In the full Incoming app, open Settings, enter your Inject User ID, and tap Save. Then reopen this App Clip.")
                 }
                 if showsSave || editor.isEditing {
                     Button(showsSave ? "Save" : "Done", action: finishEditing)
@@ -452,6 +467,11 @@ private struct IncomingNoteTextView: UIViewRepresentable {
         textView.textContainer.lineFragmentPadding = 0
 
         if onDoubleTap != nil {
+            let openBlackScreen = UIAccessibilityCustomAction(
+                name: "Open black screen", target: context.coordinator,
+                selector: #selector(Coordinator.openBlackScreen)
+            )
+            textView.accessibilityCustomActions = (textView.accessibilityCustomActions ?? []) + [openBlackScreen]
             let performance = NoteTapRecognizer(target: context.coordinator,
                                                 action: #selector(Coordinator.handleDoubleTap(_:)))
             performance.numberOfTapsRequired = 2
@@ -540,9 +560,15 @@ private struct IncomingNoteTextView: UIViewRepresentable {
         }
 
         @objc func handleDoubleTap(_ recognizer: UITapGestureRecognizer) {
-            guard recognizer.state == .ended, let textView = recognizer.view as? UITextView else { return }
+            guard recognizer.state == .ended else { return }
+            _ = openBlackScreen()
+        }
+
+        @objc func openBlackScreen() -> Bool {
+            guard let textView = parent.editor.textView, let onDoubleTap = parent.onDoubleTap else { return false }
             textView.resignFirstResponder()
-            parent.onDoubleTap?(textView.text)
+            onDoubleTap(textView.text)
+            return true
         }
     }
 }
