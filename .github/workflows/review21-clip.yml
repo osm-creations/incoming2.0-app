@@ -24,8 +24,10 @@ jobs:
           xcrun simctl boot "$device"
       - name: Prepare the App Clip fixture
         run: |
-          if ! command -v xcodegen >/dev/null; then HOMEBREW_NO_AUTO_UPDATE=1 brew install xcodegen; fi
-          xcodegen generate
+          curl -fsSL --retry 3 https://github.com/yonaskolb/XcodeGen/releases/download/2.44.1/xcodegen.zip -o "$RUNNER_TEMP/clip-xcodegen.zip"
+          echo "a2e905fb68446e9bb4008cdfe2e13e3f176d0cbcca828b71770f8e53fca91b73  $RUNNER_TEMP/clip-xcodegen.zip" | shasum -a 256 -c -
+          unzip -q "$RUNNER_TEMP/clip-xcodegen.zip" -d "$RUNNER_TEMP/clip-tools"
+          "$RUNNER_TEMP/clip-tools/xcodegen/bin/xcodegen" generate
           xcrun simctl bootstatus "$DEVICE" -b
           xcrun simctl spawn "$DEVICE" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool YES
           xcrun simctl status_bar "$DEVICE" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
