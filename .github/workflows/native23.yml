@@ -1,0 +1,62 @@
+name: Build 23 shipping App Clip process checks
+on:
+  push:
+    branches: [verify/build23-shipping-clip]
+permissions:
+  contents: read
+jobs:
+  shipping-simulator:
+    name: Real Clip / ${{ matrix.suite }}
+    runs-on: macos-15
+    timeout-minutes: 27
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [NativeClipHostedTests, NativeClipUITests]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Prepare iPhone and isolated loopback fixture
+        run: |
+          set -euo pipefail
+          bash .github/native-clip/select-xcode.sh
+          python3 .github/native-clip/choose-simulator.py standard
+          uuid="$(sed -n 's/^DEVICE=//p' "$GITHUB_ENV" | tail -1)"
+          xcrun simctl boot "$uuid"
+          f=.github/native-clip/FixtureEndpoints.plist
+          cp Sources/IncomingClip/Info.plist "$f"
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity dict" "$f"
+          /usr/libexec/PlistBuddy -c "Add :NSAppTransportSecurity:NSAllowsLocalNetworking bool true" "$f"
+          python3 .github/native-clip/prepare-tests.py
+          curl -fsSL --retry 3 https://github.com/yonaskolb/XcodeGen/releases/download/2.44.1/xcodegen.zip -o "$RUNNER_TEMP/xcodegen.zip"
+          (cd "$RUNNER_TEMP" && echo 'a2e905fb68446e9bb4008cdfe2e13e3f176d0cbcca828b71770f8e53fca91b73  xcodegen.zip' | shasum -a 256 -c - && unzip -q xcodegen.zip)
+          "$RUNNER_TEMP/xcodegen/bin/xcodegen" generate
+          git diff --exit-code -- Sources
+      - name: Run suite in shipping Clip application
+        run: |
+          set -euo pipefail
+          xcrun simctl bootstatus "$DEVICE" -b
+          python3 -u .github/native-clip/worker_fixture.py > fixture.log 2>&1 &
+          fixture=$!
+          trap 'kill "$fixture" || true' EXIT
+          for i in {1..15}; do curl -fsS http://localhost:8743/ready && break; sleep 1; done
+          xcodebuild -project Incoming2.xcodeproj -scheme "${{ matrix.suite }}" -configuration Debug -destination "platform=iOS Simulator,id=$DEVICE" API_BASE_URL=http://localhost:8743 ENABLE_TESTABILITY=YES ENABLE_DEBUG_DYLIB=NO -parallel-testing-enabled NO -derivedDataPath Derived -resultBundlePath Result.xcresult test > test.log 2>&1 || { tail -100 test.log; cat fixture.log; exit 1; }
+          clip=Derived/Build/Products/Debug-iphonesimulator/IncomingClip.app
+          test "$(plutil -extract CFBundleIdentifier raw "$clip/Info.plist")" = com.osmcreations.incoming2.Clip
+          test "$(plutil -extract CFBundleVersion raw "$clip/Info.plist")" = 23
+          xcrun otool -L "$clip/IncomingClip" | grep MediaPlayer
+          grep -F 'PATCH /api/v1/app-clip/sessions/' fixture.log
+      - name: Save simulator evidence
+        if: always()
+        run: |
+          if test -d Result.xcresult; then xcrun xcresulttool export attachments --path Result.xcresult --output-path captures || true; fi
+          xcrun simctl list devices booted
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actual-clip-23-${{ matrix.suite }}
+          path: |
+            test.log
+            fixture.log
+            captures
