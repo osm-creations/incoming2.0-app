@@ -18,13 +18,13 @@ To start the Clip, select the **IncomingClip** scheme, then **Product → Scheme
 
 In the main app, open **Dashboard → Notes Input**. Change the caller name from Alex to Jamie and save. The name should stay in the editor with no confirmation footer. Reopen Notes Input to verify Jamie was saved. Open the same App Clip link again and perform without selecting an Inject value. The note should show Rose and the reveal should show Jamie.
 
-Use a physical iPhone with haptics enabled. Start with media volume near the middle. The Clip listens for changes in output volume. At maximum volume, press Volume Down before starting with Volume Up. Buttons retain their normal volume behavior. A passive charcoal volume meter on the left shows the new output level for 1.2 seconds after each accepted change, then fades. iOS may also show its transient system volume indicator. The countdown runs on black without visible digits.
+Use a physical iPhone with haptics enabled. Start with media volume near the middle. The Clip listens for changes in output volume. At maximum volume, press Volume Down before starting with Volume Up. The buttons adjust media volume as usual. Any volume indicator that appears should be the standard iOS one. The countdown runs on black without visible digits.
 
 With a five-second delay, run each of these checks with both demo accounts.
 
 | Action on the black screen | Expected result |
 |---|---|
-| Press Volume Down before starting, then wait six seconds | The charcoal meter briefly shows the lower level and fades. The Clip stays on the black screen. |
+| Press Volume Down before starting, then wait six seconds | The volume decreases and the Clip stays on the black screen. |
 | Press Volume Up, wait two seconds, then press Volume Down and wait six seconds | The countdown is canceled. Pressing Volume Up starts all five seconds again. |
 | Press Volume Up, wait two seconds, and press Volume Up again | The reveal occurs five seconds after the last press. |
 | Swipe down with two fingers before or during the countdown | One vibration, then the same edited note reopens. Any pending reveal is canceled. |
@@ -32,12 +32,6 @@ With a five-second delay, run each of these checks with both demo accounts.
 | Move the Clip to the background mid-countdown, then return | The Clip waits for a fresh Volume Up. |
 
 Save delays of 0 and 60 seconds in the performer app and reopen the same App Clip link after each save. At 0, Volume Up reveals immediately. At 60, wait the full minute. To check NFC, open **Settings → App Clip Settings → Write NFC Tag** and hold a writable tag near the phone. Use a second iPhone configured for the corresponding App Clip experience to verify the card and launch.
-
-## Physical volume indicator comparison for build 23
-
-Use the same iPhone, iOS version, output route, and saved delay for builds 22 and 23. Launch the actual App Clip each time. With volume near the middle, double-tap the note, press Volume Up and then Volume Down before the delay expires. Compare whether the iOS volume indicator appears alongside the charcoal meter. Repeat after returning to the note and entering black again. Record the Clip build, device model, iOS version, output route, and what appeared for each press.
-
-Build 23 places a noninteractive 128 × 28 pt MPVolumeView in the black screen’s view hierarchy. Its normal opacity and black track and thumb keep the native slider on screen and visually blend it into the background. Leaving black removes the view. The app never sets the device volume. Apple documents [Media Player’s App Clip limitations](https://developer.apple.com/documentation/appclip/choosing-the-right-functionality-for-your-app-clip). The effect on the iOS indicator requires testing on a physical iPhone.
 
 ## Test account-specific presentations and settings
 
